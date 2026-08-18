@@ -1,4 +1,4 @@
-import { rm, mkdir, readFile, writeFile, copyFile } from 'node:fs/promises';
+import { rm, mkdir, readFile, writeFile, copyFile, rename } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -42,8 +42,8 @@ const replacements = new Map([
   ['{{environment}}', 'production'],
   ['{{appName}}', 'FD06 智能调奶器'],
   ['{{appDescription}}', 'FD06 智能调奶器交互演示'],
-  ['{{appAvatar}}', '/favicon.svg'],
   ['{{{appAvatar}}}', '/favicon.svg'],
+  ['{{appAvatar}}', '/favicon.svg'],
   ['{{basename}}', '/client/index.html'],
   ['{{{__platform__}}}', '{}'],
   ['{{currentUrl}}', '/client/index.html/device'],
@@ -59,6 +59,7 @@ if (unresolved) {
 }
 
 await writeFile(indexPath, html);
+await rename(indexPath, path.join(clientDir, 'app.html'));
 await mkdir(serverDir, { recursive: true });
 await copyFile(
   path.join(projectDir, 'sites', 'worker.mjs'),

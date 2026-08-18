@@ -179,7 +179,7 @@ const worker = {
     const acceptsHtml = request.headers.get('accept')?.includes('text/html');
     if (!acceptsHtml) return assetResponse;
 
-    const indexUrl = new URL('/index.html', url);
+    const indexUrl = new URL('/app.html', url);
     return env.ASSETS.fetch(new Request(indexUrl, request));
   },
 };
