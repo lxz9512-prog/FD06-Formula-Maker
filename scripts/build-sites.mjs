@@ -45,7 +45,7 @@ const replacements = new Map([
   ['{{{appAvatar}}}', '/favicon.svg'],
   ['{{appAvatar}}', '/favicon.svg'],
   ['{{basename}}', '/client/index.html'],
-  ['{{{__platform__}}}', '{}'],
+  ['{{{__platform__}}}', '{"showBadge":false}'],
   ['{{currentUrl}}', '/client/index.html/device'],
 ]);
 
