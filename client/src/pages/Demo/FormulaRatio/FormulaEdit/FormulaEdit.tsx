@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Minus, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -7,10 +7,48 @@ import { useTranslation } from '@client/src/hooks/useTranslation';
 import {
   FormulaProfileData,
   readFormulaProfiles,
+  readSelectedFormulaId,
   updateFormulaProfile,
 } from '../formulaProfiles';
 
 type FormulaData = FormulaProfileData;
+type FormulaEditMode = 'recognition' | 'manual' | 'edit';
+
+const RECOGNIZED_FORMULA: FormulaData = {
+  brand: 'Kabrita',
+  productLine: 'Pro-Total Comfort',
+  ageRange: '12+ months',
+  powderPerScoop: 8.8,
+  waterPerScoop: 2,
+};
+
+const MANUAL_FORMULA: FormulaData = {
+  brand: '',
+  productLine: '',
+  ageRange: '',
+  powderPerScoop: 8.8,
+  waterPerScoop: 2,
+};
+
+const getInitialData = (
+  mode: FormulaEditMode,
+  formulaId: string | null,
+): FormulaData => {
+  if (mode === 'edit' && formulaId) {
+    const profile = readFormulaProfiles().find((item) => item.id === formulaId);
+    if (profile) {
+      return {
+        brand: profile.brand,
+        productLine: profile.productLine,
+        ageRange: profile.ageRange,
+        powderPerScoop: profile.powderPerScoop,
+        waterPerScoop: profile.waterPerScoop,
+      };
+    }
+  }
+
+  return mode === 'manual' ? { ...MANUAL_FORMULA } : { ...RECOGNIZED_FORMULA };
+};
 
 const FormulaEdit: React.FC = () => {
   const navigate = useNavigate();
@@ -18,40 +56,49 @@ const FormulaEdit: React.FC = () => {
   const { t } = useTranslation();
   const isFirstUse = searchParams.get('source') === 'first-use';
   const isListEdit = searchParams.get('source') === 'list';
-  const formulaId = searchParams.get('id');
-  const [data, setData] = useState<FormulaData>(() => {
-    if (isListEdit && formulaId) {
-      const profile = readFormulaProfiles().find(
-        (item) => item.id === formulaId,
-      );
-      if (profile) {
-        return {
-          brand: profile.brand,
-          productLine: profile.productLine,
-          ageRange: profile.ageRange,
-          powderPerScoop: profile.powderPerScoop,
-          waterPerScoop: profile.waterPerScoop,
-        };
-      }
-    }
+  const requestedMode = searchParams.get('mode');
+  const mode: FormulaEditMode =
+    requestedMode === 'recognition' ||
+    requestedMode === 'manual' ||
+    requestedMode === 'edit'
+      ? requestedMode
+      : isListEdit
+        ? 'edit'
+        : isFirstUse
+          ? 'manual'
+          : 'recognition';
+  const requestedFormulaId = searchParams.get('id');
+  const formulaId =
+    mode === 'edit' ? requestedFormulaId || readSelectedFormulaId() : null;
+  const [data, setData] = useState<FormulaData>(() =>
+    getInitialData(mode, formulaId),
+  );
+  const copyByMode = {
+    recognition: {
+      title: 'demo.formulaEdit.title',
+      heading: 'demo.formulaEdit.analyzedTitle',
+      description: 'demo.formulaEdit.analyzedDescription',
+      action: 'demo.formulaEdit.confirmRecognition',
+    },
+    manual: {
+      title: 'demo.formulaEdit.addTitle',
+      heading: 'demo.formulaEdit.addHeading',
+      description: 'demo.formulaEdit.addDescription',
+      action: 'demo.formulaEdit.confirmManual',
+    },
+    edit: {
+      title: 'demo.formulaEdit.editTitle',
+      heading: 'demo.formulaEdit.editHeading',
+      description: 'demo.formulaEdit.editDescription',
+      action: 'demo.formulaEdit.saveChanges',
+    },
+  } as const;
+  const copy = copyByMode[mode];
 
-    const stored = localStorage.getItem('formula_profile');
-    if (stored) {
-      try {
-        return JSON.parse(stored) as FormulaData;
-      } catch {
-        localStorage.removeItem('formula_profile');
-      }
-    }
+  useEffect(() => {
+    setData(getInitialData(mode, formulaId));
+  }, [mode, formulaId]);
 
-    return {
-      brand: isFirstUse ? '' : 'Kabrita',
-      productLine: isFirstUse ? '' : 'Pro-Total Comfort',
-      ageRange: isFirstUse ? '' : '12+ months',
-      powderPerScoop: 8.8,
-      waterPerScoop: 2,
-    };
-  });
   const canSave =
     data.brand.trim().length > 0 &&
     data.powderPerScoop > 0 &&
@@ -61,9 +108,11 @@ const FormulaEdit: React.FC = () => {
     navigate(
       isFirstUse
         ? '/device'
-        : isListEdit
+        : mode === 'edit'
           ? '/formula-ratio'
-          : '/capture-formula-step2',
+          : mode === 'manual'
+            ? '/scan-formula'
+            : '/capture-formula-step2',
     );
   };
 
@@ -71,7 +120,7 @@ const FormulaEdit: React.FC = () => {
     if (!canSave) return;
 
     const profile = { ...data, brand: data.brand.trim() };
-    if (isListEdit && formulaId) {
+    if (mode === 'edit' && formulaId) {
       updateFormulaProfile(formulaId, profile);
       navigate('/formula-ratio');
       return;
@@ -125,13 +174,7 @@ const FormulaEdit: React.FC = () => {
               className="text-[17px] font-semibold"
               style={{ color: '#221122' }}
             >
-              {t(
-                isFirstUse
-                  ? 'demo.formulaEdit.addTitle'
-                  : isListEdit
-                    ? 'demo.formulaEdit.editTitle'
-                  : 'demo.formulaEdit.title',
-              )}
+              {t(copy.title)}
             </span>
           </div>
           <div className="h-10 w-10" />
@@ -152,25 +195,13 @@ const FormulaEdit: React.FC = () => {
               className="mb-1 text-[20px] font-semibold"
               style={{ color: '#221122' }}
             >
-              {t(
-                isFirstUse
-                  ? 'demo.formulaEdit.addHeading'
-                  : isListEdit
-                    ? 'demo.formulaEdit.editHeading'
-                  : 'demo.formulaEdit.analyzedTitle',
-              )}
+              {t(copy.heading)}
             </h2>
             <p
               className="mb-6 text-[14px] leading-relaxed"
               style={{ color: 'hsl(300, 3%, 55%)' }}
             >
-              {t(
-                isFirstUse
-                  ? 'demo.formulaEdit.addDescription'
-                  : isListEdit
-                    ? 'demo.formulaEdit.editDescription'
-                  : 'demo.formulaEdit.analyzedDescription',
-              )}
+              {t(copy.description)}
             </p>
 
             {/* Brand Field */}
@@ -367,11 +398,7 @@ const FormulaEdit: React.FC = () => {
               backgroundColor: canSave ? 'hsl(24, 67%, 32%)' : '#C8C3C0',
             }}
           >
-            {t(
-              isListEdit
-                ? 'demo.formulaEdit.saveChanges'
-                : 'common.done',
-            )}
+            {t(copy.action)}
           </motion.button>
         </div>
       </div>

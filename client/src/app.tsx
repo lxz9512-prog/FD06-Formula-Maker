@@ -37,42 +37,74 @@ import WaterCalibrationReminder from './pages/WaterCalibrationReminder/WaterCali
 const RoutesComponent = () => {
   return (
     <LanguageProvider>
-    <Routes>
-      <Route element={<Layout />}>
-        <Route index element={<DeviceList />} />
-        <Route path="device" element={<BabyFormulaMaker />} />
-        <Route path="formula-ratio" element={<FormulaRatio />} />
-        <Route path="scan-formula" element={<CaptureFormulaFront />} />
-        <Route path="capture-formula-back-side" element={<CaptureFormulaBackSide />} />
-        <Route path="feeding-stats" element={<FeedingStats />} />
-        <Route path="feeding-stats/add-record" element={<AddFeedingRecord />} />
-        <Route path="feeding-stats/guide" element={<FeedingGuide />} />
-        <Route path="capture-formula-front" element={<CaptureFormulaFront />} />
-        <Route path="capture-formula" element={<CaptureFormula />} />
-        <Route path="capture-formula-step2" element={<CaptureFormulaStep2 />} />
-        <Route path="formula-edit" element={<FormulaEdit />} />
-        <Route path="device-settings" element={<DeviceSettings />} />
-        <Route path="device-detail" element={<DeviceDetail />} />
-        <Route path="powder-water" element={<PowderWater />} />
-        <Route path="device-cleaning" element={<DeviceCleaning />} />
-        <Route path="formula-result" element={<FormulaResult1 />} />
-        <Route path="formula-result1" element={<FormulaResult1 />} />
-        <Route path="water-low-error" element={<WaterLowError />} />
-        <Route path="powder-error" element={<PowderError />} />
-        <Route path="powder-clean-reminder" element={<PowderCleanReminder />} />
-        <Route path="powder-clean-due" element={<PowderCleanDue />} />
-        <Route path="night-water-low" element={<NightWaterLow />} />
-        <Route path="cleaning-incomplete" element={<CleaningIncomplete />} />
-        <Route path="device-assistant" element={<DeviceAssistant />} />
-        <Route path="faq" element={<FAQList />} />
-        <Route path="faq/powder-output-error" element={<PowderOutputError />} />
-        <Route path="water-calibration" element={<WaterCalibration />} />
-        <Route path="notification-settings" element={<NotificationSettings />} />
-        <Route path="water-calibration-reminder" element={<WaterCalibrationReminder />} />
-        <Route path="tube-clean-reminder" element={<TubeCleanReminder />} />
-      </Route>
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route index element={<DeviceList />} />
+          <Route path="device" element={<BabyFormulaMaker />} />
+          <Route path="formula-ratio" element={<FormulaRatio />} />
+          <Route path="scan-formula" element={<CaptureFormulaFront />} />
+          <Route
+            path="capture-formula-back-side"
+            element={<CaptureFormulaBackSide />}
+          />
+          <Route path="feeding-stats" element={<FeedingStats />} />
+          <Route
+            path="feeding-stats/add-record"
+            element={<AddFeedingRecord />}
+          />
+          <Route path="feeding-stats/guide" element={<FeedingGuide />} />
+          <Route
+            path="capture-formula-front"
+            element={<CaptureFormulaFront />}
+          />
+          <Route path="capture-formula" element={<CaptureFormula />} />
+          <Route
+            path="capture-formula-step2"
+            element={<CaptureFormulaStep2 />}
+          />
+          <Route
+            path="capture-formula-step2/upload-failed"
+            element={<CaptureFormulaStep2 initialFailure="upload" />}
+          />
+          <Route
+            path="capture-formula-step2/recognition-failed"
+            element={<CaptureFormulaStep2 initialFailure="recognition" />}
+          />
+          <Route path="formula-edit" element={<FormulaEdit />} />
+          <Route path="device-settings" element={<DeviceSettings />} />
+          <Route path="device-detail" element={<DeviceDetail />} />
+          <Route path="powder-water" element={<PowderWater />} />
+          <Route path="device-cleaning" element={<DeviceCleaning />} />
+          <Route path="formula-result" element={<FormulaResult1 />} />
+          <Route path="formula-result1" element={<FormulaResult1 />} />
+          <Route path="water-low-error" element={<WaterLowError />} />
+          <Route path="powder-error" element={<PowderError />} />
+          <Route
+            path="powder-clean-reminder"
+            element={<PowderCleanReminder />}
+          />
+          <Route path="powder-clean-due" element={<PowderCleanDue />} />
+          <Route path="night-water-low" element={<NightWaterLow />} />
+          <Route path="cleaning-incomplete" element={<CleaningIncomplete />} />
+          <Route path="device-assistant" element={<DeviceAssistant />} />
+          <Route path="faq" element={<FAQList />} />
+          <Route
+            path="faq/powder-output-error"
+            element={<PowderOutputError />}
+          />
+          <Route path="water-calibration" element={<WaterCalibration />} />
+          <Route
+            path="notification-settings"
+            element={<NotificationSettings />}
+          />
+          <Route
+            path="water-calibration-reminder"
+            element={<WaterCalibrationReminder />}
+          />
+          <Route path="tube-clean-reminder" element={<TubeCleanReminder />} />
+        </Route>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
     </LanguageProvider>
   );
 };

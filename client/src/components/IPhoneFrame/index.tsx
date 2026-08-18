@@ -26,7 +26,7 @@ const IPhoneFrame: React.FC<IPhoneFrameProps> = ({
   };
 
   return (
-    <div className="relative mx-auto" style={{ width: 393, height: 852 }}>
+    <div className="relative isolate mx-auto" style={{ width: 393, height: 852 }}>
       {/* Global demo controls */}
       <div
         className="absolute left-[calc(100%+2px)] top-6 z-30 w-[60px] rounded-[12px] border border-black/5 bg-white/80 p-1.5 shadow-[0_6px_20px_rgba(0,0,0,0.07)] backdrop-blur-sm"

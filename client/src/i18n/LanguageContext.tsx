@@ -114,6 +114,10 @@ const translations: Record<string, Record<Language, string>> = {
   'maker.remaining': { zh: '剩余', en: 'Remaining' },
   'maker.lastRefill': { zh: '上次补充', en: 'Last Refill' },
   'maker.waterTank': { zh: '水箱', en: 'Water Tank' },
+  'maker.waterQualityTds': { zh: '水质（TDS）', en: 'Water Quality (TDS)' },
+  'maker.waterQualityExcellent': { zh: '优', en: 'Excellent' },
+  'maker.waterQualityGood': { zh: '良', en: 'Good' },
+  'maker.waterQualityPoor': { zh: '差', en: 'Poor' },
   'maker.waterStale': {
     zh: '水已存放超过24小时，建议更换',
     en: 'Water stored over 24h, please replace',
@@ -739,33 +743,50 @@ const translations: Record<string, Record<Language, string>> = {
     zh: '1勺({scoopGrams}g)配{waterOz}oz水',
     en: '1 scoop ({scoopGrams} g) per {waterOz} oz of water',
   },
-  'demo.formulaEdit.title': { zh: '审核与确认', en: 'Review & Confirm' },
+  'demo.formulaEdit.title': {
+    zh: '识别结果确认',
+    en: 'Confirm Recognition',
+  },
   'demo.formulaEdit.addTitle': {
-    zh: '添加配方信息',
-    en: 'Add Formula Details',
+    zh: '手动填写配方',
+    en: 'Enter Formula Manually',
   },
   'demo.formulaEdit.addHeading': {
-    zh: '确认奶粉配比',
-    en: 'Confirm Formula Ratio',
+    zh: '填写奶粉配比',
+    en: 'Enter Formula Ratio',
   },
   'demo.formulaEdit.addDescription': {
-    zh: '请根据奶粉罐包装信息填写，确保冲调比例准确',
-    en: 'Enter the details from the formula label for accurate preparation',
+    zh: '请根据奶粉罐包装填写以下信息，填写完成后确认配比准确。',
+    en: 'Enter the details from the formula label, then confirm the ratio is accurate.',
   },
-  'demo.formulaEdit.editTitle': { zh: '编辑配比信息', en: 'Edit Formula Ratio' },
-  'demo.formulaEdit.editHeading': { zh: '编辑配比详情', en: 'Edit Ratio Details' },
+  'demo.formulaEdit.editTitle': {
+    zh: '编辑配比信息',
+    en: 'Edit Formula Ratio',
+  },
+  'demo.formulaEdit.editHeading': {
+    zh: '编辑已有配比',
+    en: 'Edit Saved Ratio',
+  },
   'demo.formulaEdit.editDescription': {
-    zh: '请根据奶粉罐包装信息修改以下内容，确保配比准确。',
-    en: 'Update the details below using the formula label to keep the ratio accurate.',
+    zh: '正在编辑已保存的配比信息，请修改后确认内容准确。',
+    en: 'You are editing a saved ratio. Update the details and confirm they are accurate.',
   },
   'demo.formulaEdit.saveChanges': { zh: '保存修改', en: 'Save Changes' },
   'demo.formulaEdit.analyzedTitle': {
-    zh: '我们已分析您的照片',
-    en: "We've analyzed your photo",
+    zh: '确认识别信息',
+    en: 'Confirm Recognized Details',
   },
   'demo.formulaEdit.analyzedDescription': {
-    zh: '请审核以下信息，确认与产品包装一致。',
-    en: 'Please review the details below and confirm they match the product packaging.',
+    zh: '已根据照片识别出以下配比信息，请核对并确认与奶粉罐包装一致。',
+    en: 'Review the details recognized from the photos and confirm they match the formula label.',
+  },
+  'demo.formulaEdit.confirmRecognition': {
+    zh: '确认识别信息',
+    en: 'Confirm Details',
+  },
+  'demo.formulaEdit.confirmManual': {
+    zh: '确认并保存',
+    en: 'Confirm and Save',
   },
   'demo.formulaEdit.brand': { zh: '品牌', en: 'Brand' },
   'demo.formulaEdit.brandPlaceholder': {
@@ -839,8 +860,8 @@ const translations: Record<string, Record<Language, string>> = {
     en: 'Uploading image... {progress}%',
   },
   'demo.captureFormula.successToast': {
-    zh: '正面拍摄成功',
-    en: 'Front captured successfully',
+    zh: '正面照片上传成功',
+    en: 'Front photo uploaded successfully',
   },
   'demo.captureFormulaStep2.title': {
     zh: '第2步：拍摄侧面或背面',
@@ -851,12 +872,34 @@ const translations: Record<string, Record<Language, string>> = {
     en: 'Uploading image... {progress}%',
   },
   'demo.captureFormulaStep2.successToast': {
-    zh: '混合比例拍摄成功',
-    en: 'Mixing ratio captured successfully',
+    zh: '背面/侧面照片上传成功',
+    en: 'Back/side photo uploaded successfully',
   },
   'demo.captureFormulaStep2.recognizing': {
     zh: '正在识别图片... {progress}%',
     en: 'Recognizing image... {progress}%',
+  },
+  'demo.captureFormulaStep2.uploadFailedTitle': {
+    zh: '照片上传失败',
+    en: 'Photo Upload Failed',
+  },
+  'demo.captureFormulaStep2.uploadFailedDescription': {
+    zh: '请检查网络通讯是否正常。',
+    en: 'Please check whether the network connection is working properly.',
+  },
+  'demo.captureFormulaStep2.recognitionFailedTitle': {
+    zh: '照片识别失败',
+    en: 'Photo Recognition Failed',
+  },
+  'demo.captureFormulaStep2.recognitionFailedDescription': {
+    zh: '请调整拍摄角度并保持照片中粉水配比信息清晰可见。',
+    en: 'Adjust the angle and make sure the formula mixing ratio is clearly visible in the photo.',
+  },
+  'demo.captureFormulaStep2.retry': { zh: '重试', en: 'Try Again' },
+  'demo.captureFormulaStep2.retake': { zh: '重拍', en: 'Retake' },
+  'demo.captureFormulaStep2.enterManually': {
+    zh: '手动输入',
+    en: 'Enter Manually',
   },
 };
 

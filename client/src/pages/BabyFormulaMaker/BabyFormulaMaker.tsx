@@ -37,6 +37,13 @@ const BUTTON_SHADOW =
 
 type Mode = 'milk' | 'water';
 type ResourcePopup = 'water' | 'powder' | null;
+type WaterQualityLevel = 'excellent' | 'good' | 'poor';
+
+const getWaterQualityLevel = (tds: number): WaterQualityLevel => {
+  if (tds >= 100) return 'poor';
+  if (tds >= 50) return 'good';
+  return 'excellent';
+};
 
 const WATER_TEMP_OPTIONS = [
   { fahrenheit: 80, celsius: 26 },
@@ -186,6 +193,24 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
   const [deviceData, updateDeviceData] = useDeviceData();
   const waterStale =
     dayjs().diff(dayjs(deviceData.lastWaterRefill), 'hour') >= 24;
+  const waterQualityLevel = getWaterQualityLevel(deviceData.waterTds);
+  const waterQuality = {
+    excellent: {
+      label: t('maker.waterQualityExcellent'),
+      color: '#2E7D32',
+      background: '#E8F5E9',
+    },
+    good: {
+      label: t('maker.waterQualityGood'),
+      color: '#B26A00',
+      background: '#FFF4D6',
+    },
+    poor: {
+      label: t('maker.waterQualityPoor'),
+      color: '#C62828',
+      background: '#FDECEC',
+    },
+  }[waterQualityLevel];
   const powderStale =
     dayjs().diff(dayjs(deviceData.lastPowderRefill), 'hour') >= 24;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -878,7 +903,7 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -6, scale: 0.9 }}
                     transition={{ duration: 0.2, ease: 'easeOut' }}
-                    className="absolute right-0 z-20 w-[180px] rounded-[18px] p-3"
+                    className="absolute right-0 z-20 w-[196px] rounded-[18px] p-3"
                     style={{
                       top: 'calc(100% + 6px)',
                       background: 'white',
@@ -924,6 +949,34 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                           background: '#5B9BD5',
                         }}
                       />
+                    </div>
+                    <div
+                      className="mb-2 flex items-center justify-between border-y py-2"
+                      style={{ borderColor: '#F0EFEE' }}
+                    >
+                      <span
+                        className="text-[11px]"
+                        style={{ color: '#999497' }}
+                      >
+                        {t('maker.waterQualityTds')}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span
+                          className="text-[12px] font-semibold"
+                          style={{ color: '#221122' }}
+                        >
+                          {deviceData.waterTds} ppm
+                        </span>
+                        <span
+                          className="rounded-full px-1.5 py-1 text-[10px] font-semibold leading-none"
+                          style={{
+                            color: waterQuality.color,
+                            background: waterQuality.background,
+                          }}
+                        >
+                          {waterQuality.label}
+                        </span>
+                      </div>
                     </div>
                     <div className="flex items-center justify-between">
                       <span

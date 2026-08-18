@@ -6,6 +6,7 @@ interface DeviceData {
   powderCapacity: number;
   waterAmount: number;
   waterCapacity: number;
+  waterTds: number;
   lastWaterRefill: string;
   lastPowderRefill: string;
 }
@@ -17,6 +18,7 @@ const DEFAULT_DATA: DeviceData = {
   powderCapacity: 500,
   waterAmount: 1.5,
   waterCapacity: 2.0,
+  waterTds: 42,
   lastWaterRefill: dayjs().subtract(26, "hour").toISOString(),
   lastPowderRefill: dayjs().subtract(20, "hour").toISOString(),
 };

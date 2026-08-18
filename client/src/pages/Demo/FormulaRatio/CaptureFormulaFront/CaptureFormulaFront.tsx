@@ -17,6 +17,9 @@ const CaptureFormulaFront: React.FC = () => {
   const [searchParams] = useSearchParams();
   const isFirstUse = searchParams.get('source') === 'first-use';
   const firstUseSuffix = isFirstUse ? '?source=first-use' : '';
+  const manualEntryPath = `/formula-edit?mode=manual${
+    isFirstUse ? '&source=first-use' : ''
+  }`;
   const { t } = useTranslation();
 
   return (
@@ -99,7 +102,7 @@ const CaptureFormulaFront: React.FC = () => {
           {/* Enter Manually Link */}
           <motion.button
             whileTap={{ scale: 0.97 }}
-            onClick={() => navigate('/formula-edit' + firstUseSuffix)}
+            onClick={() => navigate(manualEntryPath)}
             className="flex h-[44px] w-full items-center justify-center text-[16px] font-medium"
             style={{ color: '#221122' }}
           >

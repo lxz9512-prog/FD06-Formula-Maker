@@ -128,9 +128,29 @@ const navItems: NavItem[] = [
         icon: <Camera className="h-3.5 w-3.5" />,
       },
       {
-        path: '/formula-edit',
-        label: '粉水配比编辑',
-        icon: <List className="h-3.5 w-3.5" />,
+        path: '/capture-formula-step2/upload-failed',
+        label: '照片上传失败',
+        icon: <AlertTriangle className="h-3.5 w-3.5" />,
+      },
+      {
+        path: '/capture-formula-step2/recognition-failed',
+        label: '照片识别失败',
+        icon: <AlertTriangle className="h-3.5 w-3.5" />,
+      },
+      {
+        path: '/formula-edit?mode=recognition',
+        label: '拍照识别确认',
+        icon: <Camera className="h-3.5 w-3.5" />,
+      },
+      {
+        path: '/formula-edit?mode=manual',
+        label: '手动填写配比',
+        icon: <FileText className="h-3.5 w-3.5" />,
+      },
+      {
+        path: '/formula-edit?mode=edit',
+        label: '二次编辑配比',
+        icon: <Settings className="h-3.5 w-3.5" />,
       },
     ],
   },
@@ -358,6 +378,25 @@ const isDesktopViewport = () =>
   typeof window === 'undefined' ||
   window.matchMedia('(min-width: 1280px)').matches;
 
+const getCurrentNavPath = (pathname: string, search: string) => {
+  if (pathname !== '/formula-edit') return pathname;
+
+  const params = new URLSearchParams(search);
+  const requestedMode = params.get('mode');
+  const mode =
+    requestedMode === 'recognition' ||
+    requestedMode === 'manual' ||
+    requestedMode === 'edit'
+      ? requestedMode
+      : params.get('source') === 'list'
+        ? 'edit'
+        : params.get('source') === 'first-use'
+          ? 'manual'
+          : 'recognition';
+
+  return `${pathname}?mode=${mode}`;
+};
+
 const Layout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(isDesktopViewport);
   const [isInfoPanelOpen, setIsInfoPanelOpen] = useState(isDesktopViewport);
@@ -379,6 +418,7 @@ const Layout = () => {
   >([]);
   const navigate = useNavigate();
   const location = useLocation();
+  const currentNavPath = getCurrentNavPath(location.pathname, location.search);
   const svgRef = useRef<SVGSVGElement>(null);
   const isDevicePage = location.pathname === '/device';
 
@@ -516,13 +556,13 @@ const Layout = () => {
             {navItems.map((item) => {
               if (isSubMenu(item)) {
                 const isChildActive = item.children.some(
-                  (c) => location.pathname === c.path,
+                  (c) => currentNavPath === c.path,
                 );
                 return (
                   <SubMenuGroup
                     key={item.label}
                     item={item}
-                    currentPath={location.pathname}
+                    currentPath={currentNavPath}
                     defaultOpen={isChildActive}
                     onNavigate={handlePageClick}
                   />
