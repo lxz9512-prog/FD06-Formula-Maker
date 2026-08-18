@@ -1,0 +1,437 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { ArrowLeft, Image, Zap } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import IPhoneFrame from '@client/src/components/IPhoneFrame';
+import { logger } from '@lark-apaas/client-toolkit/logger';
+import { useTranslation } from '@client/src/hooks/useTranslation';
+
+const CAMERA_VIEWFINDER_IMAGE =
+  'https://miaoda.feishu.cn/aily/api/v1/feisuda/attachments/fd7da75a-d610-49cf-bf9a-18eb34fd941a/raw';
+
+const CaptureFormulaStep2: React.FC = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const firstUseSuffix =
+    searchParams.get('source') === 'first-use' ? '?source=first-use' : '';
+  const { t } = useTranslation();
+  const [flashOn, setFlashOn] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [isRecognizing, setIsRecognizing] = useState(false);
+  const [recognizeProgress, setRecognizeProgress] = useState(0);
+
+  useEffect(() => {
+    if (isUploading && uploadProgress < 100) {
+      const timer = setTimeout(() => {
+        setUploadProgress((prev) => {
+          const next = prev + Math.floor(Math.random() * 15) + 5;
+          return next >= 100 ? 100 : next;
+        });
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+    if (uploadProgress === 100) {
+      const timer = setTimeout(() => {
+        setIsUploading(false);
+        setShowSuccess(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isUploading, uploadProgress]);
+
+  useEffect(() => {
+    if (showSuccess) {
+      const timer = setTimeout(() => {
+        setShowSuccess(false);
+        setIsRecognizing(true);
+        setRecognizeProgress(0);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [showSuccess]);
+
+  useEffect(() => {
+    if (isRecognizing && recognizeProgress < 100) {
+      const timer = setTimeout(() => {
+        setRecognizeProgress((prev) => {
+          const next = prev + Math.floor(Math.random() * 12) + 3;
+          return next >= 100 ? 100 : next;
+        });
+      }, 180);
+      return () => clearTimeout(timer);
+    }
+    if (recognizeProgress === 100) {
+      const timer = setTimeout(() => {
+        setIsRecognizing(false);
+        setRecognizeProgress(0);
+        setUploadProgress(0);
+        navigate('/formula-edit' + firstUseSuffix);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [isRecognizing, recognizeProgress, navigate, firstUseSuffix]);
+
+  const handleCapture = () => {
+    logger.info('Capture clicked');
+    setIsUploading(true);
+    setUploadProgress(0);
+    setShowSuccess(false);
+    setIsRecognizing(false);
+    setRecognizeProgress(0);
+  };
+
+  return (
+    <IPhoneFrame background="#ffffff">
+      <div className="flex h-full flex-col">
+        {/* Header */}
+        <div className="flex items-center bg-white px-4 py-3">
+          <motion.button
+            whileTap={{ scale: 0.92 }}
+            onClick={() =>
+              navigate('/capture-formula-back-side' + firstUseSuffix)
+            }
+            className="flex h-10 w-10 items-center justify-center"
+          >
+            <ArrowLeft className="h-6 w-6" style={{ color: '#221122' }} />
+          </motion.button>
+          <div className="flex-1 text-center">
+            <span
+              className="text-[17px] font-medium"
+              style={{ color: '#221122' }}
+            >
+              {t('demo.captureFormulaStep2.title')}
+            </span>
+          </div>
+          <div className="h-10 w-10" />
+        </div>
+
+        {/* Camera Viewport */}
+        <div className="relative flex-1 overflow-hidden">
+          {/* Upload Progress */}
+          <AnimatePresence>
+            {isUploading && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="absolute left-0 right-0 top-0 z-50 px-4 pt-3"
+              >
+                <div
+                  className="flex items-center gap-4 rounded-[20px] px-5 py-4"
+                  style={{ background: 'rgba(255,255,255,0.95)' }}
+                >
+                  <div className="relative h-6 w-6">
+                    <div
+                      className="absolute inset-0 rounded-full"
+                      style={{ border: '2px solid #e2dfe2' }}
+                    />
+                    <svg
+                      className="h-6 w-6 animate-spin"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <line
+                        x1="12"
+                        y1="4"
+                        x2="12"
+                        y2="7"
+                        stroke="#21161d"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        opacity="1"
+                      />
+                      <line
+                        x1="17.5"
+                        y1="5"
+                        x2="15.5"
+                        y2="8"
+                        stroke="#21161d"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        opacity="0.85"
+                      />
+                      <line
+                        x1="20.5"
+                        y1="12"
+                        x2="17"
+                        y2="12"
+                        stroke="#21161d"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        opacity="0.7"
+                      />
+                      <line
+                        x1="17.5"
+                        y1="19"
+                        x2="15.5"
+                        y2="16"
+                        stroke="#21161d"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        opacity="0.55"
+                      />
+                      <line
+                        x1="12"
+                        y1="20"
+                        x2="12"
+                        y2="17"
+                        stroke="#21161d"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        opacity="0.4"
+                      />
+                      <line
+                        x1="6.5"
+                        y1="19"
+                        x2="8.5"
+                        y2="16"
+                        stroke="#21161d"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        opacity="0.3"
+                      />
+                      <line
+                        x1="3.5"
+                        y1="12"
+                        x2="7"
+                        y2="12"
+                        stroke="#21161d"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        opacity="0.2"
+                      />
+                      <line
+                        x1="6.5"
+                        y1="5"
+                        x2="8.5"
+                        y2="8"
+                        stroke="#21161d"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        opacity="0.1"
+                      />
+                    </svg>
+                  </div>
+                  <span className="text-[16px]" style={{ color: '#21161d' }}>
+                    {t('demo.captureFormulaStep2.uploading', {
+                      progress: uploadProgress,
+                    })}
+                  </span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Success Toast */}
+          <AnimatePresence>
+            {showSuccess && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="absolute left-0 right-0 top-0 z-50 px-4 pt-3"
+              >
+                <div
+                  className="flex items-center gap-4 rounded-[20px] px-5 py-4"
+                  style={{ background: 'rgba(255,255,255,0.95)' }}
+                >
+                  <div
+                    className="flex h-6 w-6 items-center justify-center rounded-full"
+                    style={{ background: '#4CAF50' }}
+                  >
+                    <svg
+                      className="h-4 w-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="white"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  </div>
+                  <span className="text-[16px]" style={{ color: '#21161d' }}>
+                    {t('demo.captureFormulaStep2.successToast')}
+                  </span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* AI Recognizing Progress */}
+          <AnimatePresence>
+            {isRecognizing && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+                className="absolute left-0 right-0 top-0 z-50 px-4 pt-3"
+              >
+                <div
+                  className="flex items-center gap-4 rounded-[20px] px-5 py-4"
+                  style={{ background: 'rgba(255,255,255,0.95)' }}
+                >
+                  <div className="relative h-6 w-6">
+                    <div
+                      className="absolute inset-0 rounded-full"
+                      style={{ border: '2px solid #e2dfe2' }}
+                    />
+                    <svg
+                      className="h-6 w-6 animate-spin"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <line
+                        x1="12"
+                        y1="4"
+                        x2="12"
+                        y2="7"
+                        stroke="#21161d"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        opacity="1"
+                      />
+                      <line
+                        x1="17.5"
+                        y1="5"
+                        x2="15.5"
+                        y2="8"
+                        stroke="#21161d"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        opacity="0.85"
+                      />
+                      <line
+                        x1="20.5"
+                        y1="12"
+                        x2="17"
+                        y2="12"
+                        stroke="#21161d"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        opacity="0.7"
+                      />
+                      <line
+                        x1="17.5"
+                        y1="19"
+                        x2="15.5"
+                        y2="16"
+                        stroke="#21161d"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        opacity="0.55"
+                      />
+                      <line
+                        x1="12"
+                        y1="20"
+                        x2="12"
+                        y2="17"
+                        stroke="#21161d"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        opacity="0.4"
+                      />
+                      <line
+                        x1="6.5"
+                        y1="19"
+                        x2="8.5"
+                        y2="16"
+                        stroke="#21161d"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        opacity="0.3"
+                      />
+                      <line
+                        x1="3.5"
+                        y1="12"
+                        x2="7"
+                        y2="12"
+                        stroke="#21161d"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        opacity="0.2"
+                      />
+                      <line
+                        x1="6.5"
+                        y1="5"
+                        x2="8.5"
+                        y2="8"
+                        stroke="#21161d"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        opacity="0.1"
+                      />
+                    </svg>
+                  </div>
+                  <span className="text-[16px]" style={{ color: '#21161d' }}>
+                    {t('demo.captureFormulaStep2.recognizing', {
+                      progress: recognizeProgress,
+                    })}
+                  </span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Camera preview image */}
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: `url(${CAMERA_VIEWFINDER_IMAGE})`,
+              backgroundSize: 'auto 140%',
+              backgroundPosition: 'center 45%',
+            }}
+          />
+
+          {/* Bottom Controls */}
+          <div className="absolute inset-x-0 bottom-8 flex items-center justify-between px-12">
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              className="flex h-[52px] w-[52px] items-center justify-center rounded-[16px]"
+              style={{ background: 'rgba(80,80,80,0.7)' }}
+            >
+              <Image className="h-6 w-6" style={{ color: '#fff' }} />
+            </motion.button>
+
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={handleCapture}
+              className="flex h-[64px] w-[64px] items-center justify-center rounded-full"
+              style={{
+                background: 'transparent',
+                boxShadow: 'inset 0 0 0 3px rgba(255,255,255,0.9)',
+              }}
+            >
+              <div
+                className="h-[48px] w-[48px] rounded-full"
+                style={{ background: '#fff' }}
+              />
+            </motion.button>
+
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setFlashOn(!flashOn)}
+              className="flex h-[52px] w-[52px] items-center justify-center rounded-[16px]"
+              style={{
+                background: 'rgba(80,80,80,0.7)',
+              }}
+            >
+              <Zap
+                className="h-6 w-6"
+                style={{ color: flashOn ? '#FFD700' : '#fff' }}
+              />
+            </motion.button>
+          </div>
+        </div>
+      </div>
+    </IPhoneFrame>
+  );
+};
+
+export default CaptureFormulaStep2;
