@@ -1,0 +1,101 @@
+[
+  {
+    "path": "/"
+  },
+  {
+    "path": "/device"
+  },
+  {
+    "path": "/formula-ratio"
+  },
+  {
+    "path": "/scan-formula"
+  },
+  {
+    "path": "/capture-formula-back-side"
+  },
+  {
+    "path": "/feeding-stats"
+  },
+  {
+    "path": "/feeding-stats/add-record"
+  },
+  {
+    "path": "/feeding-stats/guide"
+  },
+  {
+    "path": "/capture-formula-front"
+  },
+  {
+    "path": "/capture-formula"
+  },
+  {
+    "path": "/capture-formula-step2"
+  },
+  {
+    "path": "/capture-formula-step2/upload-failed"
+  },
+  {
+    "path": "/capture-formula-step2/recognition-failed"
+  },
+  {
+    "path": "/formula-edit"
+  },
+  {
+    "path": "/device-settings"
+  },
+  {
+    "path": "/device-detail"
+  },
+  {
+    "path": "/powder-water"
+  },
+  {
+    "path": "/device-cleaning"
+  },
+  {
+    "path": "/formula-result"
+  },
+  {
+    "path": "/formula-result1"
+  },
+  {
+    "path": "/water-low-error"
+  },
+  {
+    "path": "/powder-error"
+  },
+  {
+    "path": "/powder-clean-reminder"
+  },
+  {
+    "path": "/powder-clean-due"
+  },
+  {
+    "path": "/night-water-low"
+  },
+  {
+    "path": "/cleaning-incomplete"
+  },
+  {
+    "path": "/device-assistant"
+  },
+  {
+    "path": "/faq"
+  },
+  {
+    "path": "/faq/powder-output-error"
+  },
+  {
+    "path": "/water-calibration"
+  },
+  {
+    "path": "/notification-settings"
+  },
+  {
+    "path": "/water-calibration-reminder"
+  },
+  {
+    "path": "/tube-clean-reminder"
+  }
+]
