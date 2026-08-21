@@ -1,27 +1,32 @@
-import React, { useState } from "react";
-import { useTranslation } from "@client/src/hooks/useTranslation";
-import { motion } from "framer-motion";
-import { Minus, Plus, Calendar as CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { zhCN } from "date-fns/locale";
-import { Calendar } from "@client/src/components/ui/calendar";
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from '@client/src/hooks/useTranslation';
+import { motion } from 'framer-motion';
+import { Minus, Plus, Calendar as CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
+import { Calendar } from '@client/src/components/ui/calendar';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@client/src/components/ui/popover";
-import { Button } from "@client/src/components/ui/button";
-import { Textarea } from "@client/src/components/ui/textarea";
+} from '@client/src/components/ui/popover';
+import { Button } from '@client/src/components/ui/button';
+import { Textarea } from '@client/src/components/ui/textarea';
+import {
+  ML_PER_OZ,
+  roundVolume,
+  useVolumeUnit,
+} from '@client/src/contexts/VolumeUnitContext';
 
-type FeedType = "亲喂" | "瓶喂" | "奶粉";
+type FeedType = '亲喂' | '瓶喂' | '奶粉';
 
-const FEED_TYPES: FeedType[] = ["亲喂", "瓶喂", "奶粉"];
-const FEEDER_OPTIONS = ["妈妈", "爸爸", "祖父母", "亲友"];
+const FEED_TYPES: FeedType[] = ['亲喂', '瓶喂', '奶粉'];
+const FEEDER_OPTIONS = ['妈妈', '爸爸', '祖父母', '亲友'];
 const AMOUNT_MIN = 10;
 const AMOUNT_MAX = 500;
 const AMOUNT_STEP = 10;
 
-const CARD_SHADOW = "0px 4px 12px rgba(0,0,0,0.04)";
+const CARD_SHADOW = '0px 4px 12px rgba(0,0,0,0.04)';
 
 interface FeedingRecordFormProps {
   onClose: () => void;
@@ -29,32 +34,47 @@ interface FeedingRecordFormProps {
 
 const FeedingRecordForm: React.FC<FeedingRecordFormProps> = ({ onClose }) => {
   const { t } = useTranslation();
-  const [feedType, setFeedType] = useState<FeedType>("奶粉");
+  const { unit } = useVolumeUnit();
+  const [feedType, setFeedType] = useState<FeedType>('奶粉');
   const [amount, setAmount] = useState(120);
-  const [amountInput, setAmountInput] = useState("120");
+  const [amountInput, setAmountInput] = useState('120');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [selectedTime, setSelectedTime] = useState(
-    format(new Date(), "HH:mm")
-  );
+  const [selectedTime, setSelectedTime] = useState(format(new Date(), 'HH:mm'));
   const [startTime, setStartTime] = useState(
-    format(new Date(Date.now() - 20 * 60 * 1000), "HH:mm")
+    format(new Date(Date.now() - 20 * 60 * 1000), 'HH:mm'),
   );
-  const [endTime, setEndTime] = useState(format(new Date(), "HH:mm"));
-  const [feeder, setFeeder] = useState("妈妈");
-  const [remark, setRemark] = useState("");
+  const [endTime, setEndTime] = useState(format(new Date(), 'HH:mm'));
+  const [feeder, setFeeder] = useState('妈妈');
+  const [remark, setRemark] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const displayAmount = (valueMl: number) =>
+    unit === 'ml' ? roundVolume(valueMl) : roundVolume(valueMl / ML_PER_OZ);
+  const amountStep = unit === 'ml' ? AMOUNT_STEP : 1;
+  const amountMin = displayAmount(AMOUNT_MIN);
+  const amountMax = displayAmount(AMOUNT_MAX);
+
+  useEffect(() => {
+    setAmountInput(String(displayAmount(amount)));
+  }, [unit]);
+
+  const commitDisplayedAmount = (displayed: number) => {
+    const nextMl = unit === 'ml' ? displayed : displayed * ML_PER_OZ;
+    const clampedMl = Math.min(AMOUNT_MAX, Math.max(AMOUNT_MIN, nextMl));
+    setAmount(clampedMl);
+    setAmountInput(String(displayAmount(clampedMl)));
+  };
 
   const feedTypeLabels: Record<FeedType, string> = {
-    "亲喂": t("feedingRecord.type.breastfeed"),
-    "瓶喂": t("feedingRecord.type.bottle"),
-    "奶粉": t("feedingRecord.type.formula"),
+    亲喂: t('feedingRecord.type.breastfeed'),
+    瓶喂: t('feedingRecord.type.bottle'),
+    奶粉: t('feedingRecord.type.formula'),
   };
 
   const feederLabels: Record<string, string> = {
-    "妈妈": t("feedingRecord.feeder.mom"),
-    "爸爸": t("feedingRecord.feeder.dad"),
-    "祖父母": t("feedingRecord.feeder.grandparents"),
-    "亲友": t("feedingRecord.feeder.relatives"),
+    妈妈: t('feedingRecord.feeder.mom'),
+    爸爸: t('feedingRecord.feeder.dad'),
+    祖父母: t('feedingRecord.feeder.grandparents'),
+    亲友: t('feedingRecord.feeder.relatives'),
   };
 
   const handleSubmit = () => {
@@ -69,13 +89,19 @@ const FeedingRecordForm: React.FC<FeedingRecordFormProps> = ({ onClose }) => {
     <>
       <div className="flex-1 space-y-3 overflow-y-auto px-5 pb-4">
         {/* Feed Type */}
-        <div className="rounded-[18px] bg-white p-4" style={{ boxShadow: CARD_SHADOW }}>
-          <p className="mb-3 text-[15px] font-semibold" style={{ color: "#221122" }}>
-            {t("feedingRecord.feedType")}
+        <div
+          className="rounded-[18px] bg-white p-4"
+          style={{ boxShadow: CARD_SHADOW }}
+        >
+          <p
+            className="mb-3 text-[15px] font-semibold"
+            style={{ color: '#221122' }}
+          >
+            {t('feedingRecord.feedType')}
           </p>
           <div
             className="flex h-[40px] rounded-[20px] p-1"
-            style={{ background: "#F0EFEE" }}
+            style={{ background: '#F0EFEE' }}
           >
             {FEED_TYPES.map((type) => (
               <motion.button
@@ -86,14 +112,14 @@ const FeedingRecordForm: React.FC<FeedingRecordFormProps> = ({ onClose }) => {
                 style={
                   feedType === type
                     ? {
-                        background: "white",
-                        boxShadow: "0px 2px 6px rgba(0,0,0,0.05)",
-                        color: "#221122",
+                        background: 'white',
+                        boxShadow: '0px 2px 6px rgba(0,0,0,0.05)',
+                        color: '#221122',
                         fontWeight: 600,
                       }
                     : {
-                        background: "transparent",
-                        color: "#999497",
+                        background: 'transparent',
+                        color: '#999497',
                         fontWeight: 400,
                       }
                 }
@@ -105,76 +131,85 @@ const FeedingRecordForm: React.FC<FeedingRecordFormProps> = ({ onClose }) => {
         </div>
 
         {/* Amount (not for 亲喂) */}
-        {feedType !== "亲喂" && (
-          <div className="rounded-[18px] bg-white p-4" style={{ boxShadow: CARD_SHADOW }}>
-            <p className="mb-3 text-[15px] font-semibold" style={{ color: "#221122" }}>
-              {t("feedingRecord.amount")}
+        {feedType !== '亲喂' && (
+          <div
+            className="rounded-[18px] bg-white p-4"
+            style={{ boxShadow: CARD_SHADOW }}
+          >
+            <p
+              className="mb-3 text-[15px] font-semibold"
+              style={{ color: '#221122' }}
+            >
+              {t('feedingRecord.amount', { unit })}
             </p>
             <div
               className="flex h-[48px] items-center justify-between rounded-[14px] px-2"
-              style={{ background: "#F5F5F5" }}
+              style={{ background: '#F5F5F5' }}
             >
               <motion.button
                 whileTap={amount > AMOUNT_MIN ? { scale: 0.9 } : {}}
                 onClick={() => {
-                  const v = Math.max(AMOUNT_MIN, amount - AMOUNT_STEP);
-                  setAmount(v);
-                  setAmountInput(String(v));
+                  commitDisplayedAmount(
+                    Math.max(amountMin, displayAmount(amount) - amountStep),
+                  );
                 }}
                 disabled={amount <= AMOUNT_MIN}
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full disabled:opacity-40"
               >
-                <Minus className="h-5 w-5" style={{ color: "#221122" }} />
+                <Minus className="h-5 w-5" style={{ color: '#221122' }} />
               </motion.button>
               <input
                 type="number"
-                inputMode="numeric"
+                inputMode="decimal"
                 value={amountInput}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   const raw = e.target.value;
                   setAmountInput(raw);
-                  const parsed = parseInt(raw, 10);
-                  if (!isNaN(parsed) && parsed >= AMOUNT_MIN && parsed <= AMOUNT_MAX) {
-                    setAmount(parsed);
+                  const parsed = Number(raw);
+                  if (
+                    !isNaN(parsed) &&
+                    parsed >= amountMin &&
+                    parsed <= amountMax
+                  ) {
+                    setAmount(unit === 'ml' ? parsed : parsed * ML_PER_OZ);
                   }
                 }}
                 onBlur={() => {
-                  const parsed = parseInt(amountInput, 10);
-                  if (isNaN(parsed) || parsed < AMOUNT_MIN) {
-                    setAmount(AMOUNT_MIN);
-                    setAmountInput(String(AMOUNT_MIN));
-                  } else if (parsed > AMOUNT_MAX) {
-                    setAmount(AMOUNT_MAX);
-                    setAmountInput(String(AMOUNT_MAX));
-                  } else {
-                    setAmount(parsed);
-                    setAmountInput(String(parsed));
-                  }
+                  const parsed = Number(amountInput);
+                  commitDisplayedAmount(isNaN(parsed) ? amountMin : parsed);
                 }}
                 className="w-20 bg-transparent text-center text-[17px] font-bold outline-none"
-                style={{ color: "#221122" }}
+                style={{ color: '#221122' }}
               />
-              <span className="text-[13px]" style={{ color: "#999497" }}>ml</span>
+              <span className="text-[13px]" style={{ color: '#999497' }}>
+                {unit}
+              </span>
               <motion.button
                 whileTap={amount < AMOUNT_MAX ? { scale: 0.9 } : {}}
                 onClick={() => {
-                  const v = Math.min(AMOUNT_MAX, amount + AMOUNT_STEP);
-                  setAmount(v);
-                  setAmountInput(String(v));
+                  commitDisplayedAmount(
+                    Math.min(amountMax, displayAmount(amount) + amountStep),
+                  );
                 }}
                 disabled={amount >= AMOUNT_MAX}
                 className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full disabled:opacity-40"
               >
-                <Plus className="h-5 w-5" style={{ color: "#221122" }} />
+                <Plus className="h-5 w-5" style={{ color: '#221122' }} />
               </motion.button>
             </div>
           </div>
         )}
 
         {/* Time Picker */}
-        <div className="rounded-[18px] bg-white p-4" style={{ boxShadow: CARD_SHADOW }}>
-          <p className="mb-3 text-[15px] font-semibold" style={{ color: "#221122" }}>
-            {t("feedingRecord.time")}
+        <div
+          className="rounded-[18px] bg-white p-4"
+          style={{ boxShadow: CARD_SHADOW }}
+        >
+          <p
+            className="mb-3 text-[15px] font-semibold"
+            style={{ color: '#221122' }}
+          >
+            {t('feedingRecord.time')}
           </p>
           <div className="flex items-center gap-2">
             <Popover>
@@ -182,13 +217,16 @@ const FeedingRecordForm: React.FC<FeedingRecordFormProps> = ({ onClose }) => {
                 <Button
                   variant="outline"
                   className="flex h-[44px] flex-1 justify-start rounded-[14px] text-[14px] font-normal"
-                  style={{ background: "#F5F5F5", borderColor: "transparent" }}
+                  style={{ background: '#F5F5F5', borderColor: 'transparent' }}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" style={{ color: "#999497" }} />
-                  <span style={{ color: "#221122" }}>
+                  <CalendarIcon
+                    className="mr-2 h-4 w-4"
+                    style={{ color: '#999497' }}
+                  />
+                  <span style={{ color: '#221122' }}>
                     {selectedDate
-                      ? format(selectedDate, "yyyy/MM/dd")
-                      : t("feedingRecord.selectDate")}
+                      ? format(selectedDate, 'yyyy/MM/dd')
+                      : t('feedingRecord.selectDate')}
                   </span>
                 </Button>
               </PopoverTrigger>
@@ -196,7 +234,9 @@ const FeedingRecordForm: React.FC<FeedingRecordFormProps> = ({ onClose }) => {
                 <Calendar
                   mode="single"
                   selected={selectedDate}
-                  onSelect={(date: Date | undefined) => date && setSelectedDate(date)}
+                  onSelect={(date: Date | undefined) =>
+                    date && setSelectedDate(date)
+                  }
                   locale={zhCN}
                   disabled={{ after: new Date() }}
                 />
@@ -204,35 +244,43 @@ const FeedingRecordForm: React.FC<FeedingRecordFormProps> = ({ onClose }) => {
             </Popover>
           </div>
 
-          {feedType === "亲喂" ? (
+          {feedType === '亲喂' ? (
             <div className="mt-3 flex items-center gap-2">
               <div className="flex flex-1 flex-col gap-1">
-                <span className="text-[12px]" style={{ color: "#999497" }}>{t("feedingRecord.startTime")}</span>
+                <span className="text-[12px]" style={{ color: '#999497' }}>
+                  {t('feedingRecord.startTime')}
+                </span>
                 <label
                   className="flex h-[40px] cursor-pointer items-center rounded-[12px] px-3"
-                  style={{ background: "#F5F5F5" }}
+                  style={{ background: '#F5F5F5' }}
                 >
                   <input
                     type="time"
                     value={startTime}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStartTime(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setStartTime(e.target.value)
+                    }
                     className="w-full bg-transparent text-[14px] outline-none"
-                    style={{ color: "#221122" }}
+                    style={{ color: '#221122' }}
                   />
                 </label>
               </div>
               <div className="flex flex-1 flex-col gap-1">
-                <span className="text-[12px]" style={{ color: "#999497" }}>{t("feedingRecord.endTime")}</span>
+                <span className="text-[12px]" style={{ color: '#999497' }}>
+                  {t('feedingRecord.endTime')}
+                </span>
                 <label
                   className="flex h-[40px] cursor-pointer items-center rounded-[12px] px-3"
-                  style={{ background: "#F5F5F5" }}
+                  style={{ background: '#F5F5F5' }}
                 >
                   <input
                     type="time"
                     value={endTime}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEndTime(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setEndTime(e.target.value)
+                    }
                     className="w-full bg-transparent text-[14px] outline-none"
-                    style={{ color: "#221122" }}
+                    style={{ color: '#221122' }}
                   />
                 </label>
               </div>
@@ -241,21 +289,23 @@ const FeedingRecordForm: React.FC<FeedingRecordFormProps> = ({ onClose }) => {
             <div className="mt-3 flex items-center gap-2">
               <label
                 className="flex h-[44px] cursor-pointer items-center rounded-[14px] px-3"
-                style={{ background: "#F5F5F5" }}
+                style={{ background: '#F5F5F5' }}
               >
                 <input
                   type="time"
                   value={selectedTime}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSelectedTime(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setSelectedTime(e.target.value)
+                  }
                   className="w-full bg-transparent text-[14px] outline-none"
-                  style={{ color: "#221122" }}
+                  style={{ color: '#221122' }}
                 />
               </label>
               <div className="flex gap-1.5">
                 {[
-                  { label: t("feedingRecord.now"), hours: 0 },
-                  { label: t("feedingRecord.hoursAgo1"), hours: 1 },
-                  { label: t("feedingRecord.hoursAgo2"), hours: 2 },
+                  { label: t('feedingRecord.now'), hours: 0 },
+                  { label: t('feedingRecord.hoursAgo1'), hours: 1 },
+                  { label: t('feedingRecord.hoursAgo2'), hours: 2 },
                 ].map((item) => {
                   return (
                     <motion.button
@@ -265,10 +315,10 @@ const FeedingRecordForm: React.FC<FeedingRecordFormProps> = ({ onClose }) => {
                         const d = new Date();
                         d.setHours(d.getHours() - item.hours);
                         setSelectedDate(d);
-                        setSelectedTime(format(d, "HH:mm"));
+                        setSelectedTime(format(d, 'HH:mm'));
                       }}
                       className="rounded-[10px] px-2.5 py-1 text-[12px]"
-                      style={{ background: "#F0EFEE", color: "#666" }}
+                      style={{ background: '#F0EFEE', color: '#666' }}
                     >
                       {item.label}
                     </motion.button>
@@ -279,41 +329,57 @@ const FeedingRecordForm: React.FC<FeedingRecordFormProps> = ({ onClose }) => {
           )}
         </div>
 
-        {/* Feeder Role */}
-        <div className="rounded-[18px] bg-white p-4" style={{ boxShadow: CARD_SHADOW }}>
-          <p className="mb-3 text-[15px] font-semibold" style={{ color: "#221122" }}>
-            {t("feedingRecord.feederRole")}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {FEEDER_OPTIONS.map((role: string) => (
-              <motion.button
-                key={role}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setFeeder(role)}
-                className="rounded-[14px] px-4 py-2 text-[13px] font-medium transition-all duration-200"
-                style={
-                  feeder === role
-                    ? { background: "#8B4A1B", color: "#fff" }
-                    : { background: "#F0EFEE", color: "#666" }
-                }
-              >
-                {feederLabels[role]}
-              </motion.button>
-            ))}
+        {/* Feeder Role (not for 亲喂) */}
+        {feedType !== '亲喂' && (
+          <div
+            className="rounded-[18px] bg-white p-4"
+            style={{ boxShadow: CARD_SHADOW }}
+          >
+            <p
+              className="mb-3 text-[15px] font-semibold"
+              style={{ color: '#221122' }}
+            >
+              {t('feedingRecord.feederRole')}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {FEEDER_OPTIONS.map((role: string) => (
+                <motion.button
+                  key={role}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setFeeder(role)}
+                  className="rounded-[14px] px-4 py-2 text-[13px] font-medium transition-all duration-200"
+                  style={
+                    feeder === role
+                      ? { background: '#8B4A1B', color: '#fff' }
+                      : { background: '#F0EFEE', color: '#666' }
+                  }
+                >
+                  {feederLabels[role]}
+                </motion.button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Remark */}
-        <div className="rounded-[18px] bg-white p-4" style={{ boxShadow: CARD_SHADOW }}>
-          <p className="mb-3 text-[15px] font-semibold" style={{ color: "#221122" }}>
-            {t("feedingRecord.remark")}
+        <div
+          className="rounded-[18px] bg-white p-4"
+          style={{ boxShadow: CARD_SHADOW }}
+        >
+          <p
+            className="mb-3 text-[15px] font-semibold"
+            style={{ color: '#221122' }}
+          >
+            {t('feedingRecord.remark')}
           </p>
           <Textarea
-            placeholder={t("feedingRecord.remarkPlaceholder")}
+            placeholder={t('feedingRecord.remarkPlaceholder')}
             value={remark}
-            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRemark(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
+              setRemark(e.target.value)
+            }
             className="min-h-[80px] resize-none rounded-[14px] text-[13px]"
-            style={{ background: "#F5F5F5", borderColor: "transparent" }}
+            style={{ background: '#F5F5F5', borderColor: 'transparent' }}
           />
         </div>
       </div>
@@ -326,11 +392,11 @@ const FeedingRecordForm: React.FC<FeedingRecordFormProps> = ({ onClose }) => {
           disabled={submitted}
           className="flex h-[52px] w-full items-center justify-center rounded-[26px] text-[16px] font-semibold text-white transition-all duration-200"
           style={{
-            backgroundColor: submitted ? "#5DB97E" : "#8B4A1B",
-            boxShadow: "0px 6px 16px rgba(125,60,15,0.3)",
+            backgroundColor: submitted ? '#5DB97E' : '#8B4A1B',
+            boxShadow: '0px 6px 16px rgba(125,60,15,0.3)',
           }}
         >
-          {submitted ? t("feedingRecord.saved") : t("feedingRecord.saveRecord")}
+          {submitted ? t('feedingRecord.saved') : t('feedingRecord.saveRecord')}
         </motion.button>
       </div>
 
@@ -340,9 +406,9 @@ const FeedingRecordForm: React.FC<FeedingRecordFormProps> = ({ onClose }) => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="absolute bottom-24 left-1/2 z-30 -translate-x-1/2 rounded-2xl bg-[#5DB97E] px-6 py-3 text-[14px] font-medium text-white"
-          style={{ boxShadow: "0 4px 16px rgba(93,185,126,0.3)" }}
+          style={{ boxShadow: '0 4px 16px rgba(93,185,126,0.3)' }}
         >
-          {t("feedingRecord.saveSuccess")}
+          {t('feedingRecord.saveSuccess')}
         </motion.div>
       )}
     </>

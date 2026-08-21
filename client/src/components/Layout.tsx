@@ -239,18 +239,58 @@ const DEVICE_INTERACTION_SECTIONS: InteractionSection[] = [
     ],
   },
   {
-    title: '夜灯 · 亮度调节',
+    title: '夜灯 · 开关',
     icon: <Sun className="h-4 w-4" />,
     color: '#D97706',
     connector: 'night-light',
-    items: [
-      '开启夜灯后展开亮度调节控件',
-      '亮度支持10%-100%，每次调节10%',
-      '关闭夜灯时保留当前亮度，下次开启继续使用',
-    ],
+    items: ['夜灯支持手动开启与关闭'],
   },
 ];
 
+type FormulaEditMode = 'recognition' | 'manual' | 'edit';
+
+const FORMULA_EDIT_FIELD_RULES = [
+  '每勺奶粉量（必填）：仅数字，可手动调整；范围3-45g，步进0.1g',
+  '每勺奶粉适配水量（必填）：仅数字，可手动调整',
+  '水量单位为mL时：范围10-300mL，步进10mL',
+  '水量单位为oz时：范围1-10oz，步进1oz',
+  'mL与oz单位换算精确到小数点后一位',
+  '粉水配比根据每勺奶粉量与每勺适配水量自动计算',
+  '配比超过7:1（oz单位下）时，提示“粉水配比超过正常范围”，并禁止保存',
+];
+
+const FORMULA_EDIT_INTERACTION_SECTIONS: Record<
+  FormulaEditMode,
+  InteractionSection[]
+> = {
+  recognition: [
+    {
+      title: '粉水配比确认',
+      icon: <Camera className="h-4 w-4" />,
+      color: '#8B4A1B',
+      connector: 'formula-recognition-rules',
+      items: FORMULA_EDIT_FIELD_RULES,
+    },
+  ],
+  manual: [
+    {
+      title: '手动输入粉水配比',
+      icon: <FileText className="h-4 w-4" />,
+      color: '#8B4A1B',
+      connector: 'manual-formula-rules',
+      items: ['每勺奶粉量默认值：8.7g', ...FORMULA_EDIT_FIELD_RULES],
+    },
+  ],
+  edit: [
+    {
+      title: '编辑粉水配比',
+      icon: <Settings className="h-4 w-4" />,
+      color: '#8B4A1B',
+      connector: 'formula-edit-rules',
+      items: FORMULA_EDIT_FIELD_RULES,
+    },
+  ],
+};
 const SubMenuGroup: React.FC<{
   item: SubMenu;
   currentPath: string;
@@ -421,6 +461,14 @@ const Layout = () => {
   const currentNavPath = getCurrentNavPath(location.pathname, location.search);
   const svgRef = useRef<SVGSVGElement>(null);
   const isDevicePage = location.pathname === '/device';
+  const formulaEditMode = currentNavPath.startsWith('/formula-edit?mode=')
+    ? (currentNavPath.split('=')[1] as FormulaEditMode)
+    : null;
+  const interactionSections = isDevicePage
+    ? DEVICE_INTERACTION_SECTIONS
+    : formulaEditMode
+      ? FORMULA_EDIT_INTERACTION_SECTIONS[formulaEditMode]
+      : [];
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -610,7 +658,7 @@ const Layout = () => {
         className={[
           'flex min-w-0 flex-1 items-center justify-center overflow-auto transition-all duration-300',
           isSidebarOpen ? 'xl:ml-64' : '',
-          isInfoPanelOpen ? 'xl:mr-[600px]' : '',
+          isInfoPanelOpen ? 'xl:mr-[550px]' : '',
         ].join(' ')}
       >
         <Outlet />
@@ -635,14 +683,14 @@ const Layout = () => {
       {/* Right Info Panel */}
       <div
         className={`fixed right-0 top-0 z-40 h-full bg-white transition-all duration-300 ${
-          isInfoPanelOpen ? 'w-full sm:w-[420px] xl:w-[600px]' : 'w-0'
+          isInfoPanelOpen ? 'w-full sm:w-[420px] xl:w-[550px]' : 'w-0'
         }`}
         style={{
           boxShadow: isInfoPanelOpen ? '-4px 0 24px rgba(0,0,0,0.08)' : 'none',
           overflow: 'hidden',
         }}
       >
-        <div className="flex h-full w-screen flex-col p-6 sm:w-[420px] xl:w-[600px]">
+        <div className="flex h-full w-screen flex-col p-6 sm:w-[420px] xl:w-[550px]">
           <h2
             className="mb-6 text-[18px] font-semibold"
             style={{ color: '#8B4A1B' }}
@@ -650,16 +698,15 @@ const Layout = () => {
             交互说明
           </h2>
           <nav className="flex-1 space-y-1 overflow-y-auto">
-            {isDevicePage &&
-              DEVICE_INTERACTION_SECTIONS.map((section, index) => (
-                <div key={index} data-panel-connector={section.connector}>
-                  <InteractionSectionItem
-                    section={section}
-                    isOpen={!!openSections[index]}
-                    onToggle={() => toggleSection(index)}
-                  />
-                </div>
-              ))}
+            {interactionSections.map((section, index) => (
+              <div key={index} data-panel-connector={section.connector}>
+                <InteractionSectionItem
+                  section={section}
+                  isOpen={!!openSections[index]}
+                  onToggle={() => toggleSection(index)}
+                />
+              </div>
+            ))}
           </nav>
         </div>
       </div>

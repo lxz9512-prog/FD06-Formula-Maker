@@ -17,16 +17,22 @@ import {
   AlertTriangle,
   X,
   FlaskConical,
-  Sun,
-  SunDim,
 } from 'lucide-react';
 import IPhoneFrame from '@client/src/components/IPhoneFrame';
 import { useDeviceData } from '@client/src/hooks/useDeviceData';
 import { useTranslation } from '@client/src/hooks/useTranslation';
 import { Image } from '@client/src/components/ui/image';
+import deviceImage from '@/assets/fd06-device.png';
+import {
+  formatVolumeFromMl,
+  formatVolumeFromOz,
+  mlToOz,
+  ozToMl,
+  roundVolume,
+  useVolumeUnit,
+} from '@client/src/contexts/VolumeUnitContext';
 
-const DEVICE_IMAGE_URL =
-  'https://miaoda.feishu.cn/aily/api/v1/feisuda/attachments/daec42b9-b358-4b36-991a-a3d017d61fa1/raw';
+const DEVICE_IMAGE_URL = deviceImage;
 
 const NEUMORPHIC_SHADOW =
   '6px 6px 12px hsl(330 10% 85% / 0.25), -6px -6px 12px hsl(0 0% 100% / 0.8)';
@@ -36,7 +42,7 @@ const BUTTON_SHADOW =
   '4px 4px 8px hsl(330 10% 85% / 0.3), -4px -4px 8px hsl(0 0% 100% / 0.8)';
 
 type Mode = 'milk' | 'water';
-type ResourcePopup = 'water' | 'powder' | null;
+type ResourcePopup = 'water' | 'powder' | 'formula' | null;
 type WaterQualityLevel = 'excellent' | 'good' | 'poor';
 
 const getWaterQualityLevel = (tds: number): WaterQualityLevel => {
@@ -60,6 +66,11 @@ const WATER_CONFIG: Record<
   milk: { min: 1, max: 11, step: 1, defaultAmount: 2 },
   water: { min: 1, max: 10, step: 1, defaultAmount: 5 },
 };
+const POWDER_REMAINING_GRAMS = 60;
+const POWDER_PER_CUP_GRAMS = 20;
+const POWDER_REMAINING_CUPS = Math.floor(
+  POWDER_REMAINING_GRAMS / POWDER_PER_CUP_GRAMS,
+);
 
 interface FormulaProfile {
   brand: string;
@@ -148,6 +159,7 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
     waterCalibrationReminderProp && !waterCalibrationDismissed;
   const showTubeCleanReminder = tubeCleanReminderProp && !tubeCleanDismissed;
   const { t } = useTranslation();
+  const { unit } = useVolumeUnit();
   const [mixingChamberCount, setMixingChamberCount] = useState<number>(() => {
     const stored = localStorage.getItem('mixing_chamber_count');
     return stored ? parseInt(stored, 10) : 0;
@@ -177,10 +189,36 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
   const [waterAmount, setWaterAmount] = useState(
     WATER_CONFIG['milk'].defaultAmount,
   );
+  const displayedWaterAmount =
+    unit === 'oz'
+      ? roundVolume(waterAmount)
+      : Math.round(ozToMl(waterAmount) / 10) * 10;
+  const displayedWaterMin = unit === 'oz' ? WATER_CONFIG[mode].min : 30;
+  const displayedWaterMax =
+    unit === 'oz' ? WATER_CONFIG[mode].max : mode === 'milk' ? 330 : 300;
+  const adjustWaterAmount = (direction: -1 | 1) => {
+    if (unit === 'oz') {
+      setWaterAmount((current) =>
+        Math.min(
+          WATER_CONFIG[mode].max,
+          Math.max(
+            WATER_CONFIG[mode].min,
+            Math.round(current) + direction * WATER_CONFIG[mode].step,
+          ),
+        ),
+      );
+      return;
+    }
+
+    const nextMl = Math.min(
+      displayedWaterMax,
+      Math.max(displayedWaterMin, displayedWaterAmount + direction * 10),
+    );
+    setWaterAmount(mlToOz(nextMl));
+  };
   const [waterTempIndex, setWaterTempIndex] = useState(2);
   const [childLock, setChildLock] = useState(false);
   const [nightLight, setNightLight] = useState(false);
-  const [nightLightBrightness, setNightLightBrightness] = useState(60);
   const [isMaking, setIsMaking] = useState(false);
   const [showFormulaToast, setShowFormulaToast] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -761,7 +799,10 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
           }`}
         >
           {/* Device Image with Resource Indicators */}
-          <div className="relative -mt-5 flex items-center justify-center py-1">
+          <motion.div
+            layout
+            className="relative -mt-5 flex flex-col items-center justify-center py-1"
+          >
             <Image
               src={DEVICE_IMAGE_URL}
               alt="Baby Formula Maker Device"
@@ -771,264 +812,364 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
               }}
             />
 
-            {/* Mixing Chamber Indicator - Left */}
-            <div
-              className="absolute top-1/2 z-10 -translate-y-1/2"
-              style={{ right: 'calc(50% + 60px)' }}
-            >
-              <motion.button
-                whileTap={{ scale: 0.92 }}
-                onClick={() =>
-                  setResourcePopup(resourcePopup === 'powder' ? null : 'powder')
-                }
-                className="flex flex-col items-center gap-1 rounded-[16px] px-2.5 py-3"
-                style={{
-                  background: 'white',
-                  boxShadow: mixingChamberBlocked
-                    ? '4px 4px 10px hsl(0 80% 85% / 0.4), -4px -4px 10px hsl(0 0% 100% / 0.8)'
-                    : '4px 4px 10px hsl(330 10% 85% / 0.3), -4px -4px 10px hsl(0 0% 100% / 0.8)',
-                }}
-              >
-                <FlaskConical
-                  className="h-4 w-4"
+            <div className="-mt-2 grid w-full grid-cols-3 gap-2">
+              {/* Mixing Chamber Indicator */}
+              <div className="min-w-0">
+                <motion.button
+                  whileTap={{ scale: 0.92 }}
+                  aria-expanded={resourcePopup === 'powder'}
+                  aria-controls="resource-detail-panel"
+                  onClick={() =>
+                    setResourcePopup(
+                      resourcePopup === 'powder' ? null : 'powder',
+                    )
+                  }
+                  className="relative flex h-[70px] w-full flex-col items-center justify-center gap-0.5 rounded-[14px] px-1.5"
                   style={{
-                    color: mixingChamberBlocked ? '#DC2626' : '#C4956A',
-                  }}
-                />
-                <span
-                  className="text-[11px] font-bold"
-                  style={{
-                    color: mixingChamberBlocked ? '#DC2626' : '#221122',
+                    background: 'white',
+                    boxShadow:
+                      resourcePopup === 'powder'
+                        ? 'inset 0 0 0 1.5px #C4956A, 4px 4px 10px hsl(330 10% 85% / 0.25)'
+                        : mixingChamberBlocked
+                          ? '4px 4px 10px hsl(0 80% 85% / 0.4), -4px -4px 10px hsl(0 0% 100% / 0.8)'
+                          : '4px 4px 10px hsl(330 10% 85% / 0.3), -4px -4px 10px hsl(0 0% 100% / 0.8)',
                   }}
                 >
-                  {mixingChamberCount}次
-                </span>
-              </motion.button>
-              <AnimatePresence>
-                {resourcePopup === 'powder' && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -6, scale: 0.9 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -6, scale: 0.9 }}
-                    transition={{ duration: 0.2, ease: 'easeOut' }}
-                    className="absolute left-0 z-20 w-[180px] rounded-[18px] p-3"
+                  <FlaskConical
+                    className="h-4 w-4"
                     style={{
-                      top: 'calc(100% + 6px)',
-                      background: 'white',
-                      boxShadow:
-                        '0 8px 30px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)',
+                      color: mixingChamberBlocked ? '#DC2626' : '#C4956A',
+                    }}
+                  />
+                  <span className="text-[9px]" style={{ color: '#999497' }}>
+                    {t('maker.mixingChamber')}
+                  </span>
+                  <span
+                    className="text-[11px] font-bold"
+                    style={{
+                      color: mixingChamberBlocked ? '#DC2626' : '#221122',
                     }}
                   >
-                    <div className="mb-2 flex items-center gap-1.5">
+                    {mixingChamberCount}次
+                  </span>
+                </motion.button>
+              </div>
+
+              {/* Formula Can Indicator */}
+              <motion.button
+                whileTap={{ scale: 0.92 }}
+                aria-expanded={resourcePopup === 'formula'}
+                aria-controls="resource-detail-panel"
+                onClick={() =>
+                  setResourcePopup(
+                    resourcePopup === 'formula' ? null : 'formula',
+                  )
+                }
+                className="relative flex h-[70px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-[14px] bg-white px-1"
+                style={{
+                  boxShadow:
+                    resourcePopup === 'formula'
+                      ? 'inset 0 0 0 1.5px #C4956A, 4px 4px 10px hsl(330 10% 85% / 0.25)'
+                      : '4px 4px 10px hsl(330 10% 85% / 0.3), -4px -4px 10px hsl(0 0% 100% / 0.8)',
+                }}
+              >
+                <Milk className="h-4 w-4" style={{ color: '#8B4A1B' }} />
+                <span className="text-[9px]" style={{ color: '#999497' }}>
+                  {t('maker.formulaCan')}
+                </span>
+                <span
+                  className="text-[11px] font-bold leading-tight"
+                  style={{ color: '#221122' }}
+                >
+                  {t('maker.powderCupsRemaining', {
+                    cups: POWDER_REMAINING_CUPS,
+                    grams: POWDER_REMAINING_GRAMS,
+                  })}
+                </span>
+              </motion.button>
+
+              {/* Water Level Indicator */}
+              <div className="min-w-0">
+                <motion.button
+                  whileTap={{ scale: 0.92 }}
+                  aria-expanded={resourcePopup === 'water'}
+                  aria-controls="resource-detail-panel"
+                  onClick={() =>
+                    setResourcePopup(resourcePopup === 'water' ? null : 'water')
+                  }
+                  className="relative flex h-[70px] w-full flex-col items-center justify-center gap-0.5 rounded-[14px] px-1.5"
+                  style={{
+                    background: 'white',
+                    boxShadow:
+                      resourcePopup === 'water'
+                        ? 'inset 0 0 0 1.5px #5B9BD5, 4px 4px 10px hsl(330 10% 85% / 0.25)'
+                        : '4px 4px 10px hsl(330 10% 85% / 0.3), -4px -4px 10px hsl(0 0% 100% / 0.8)',
+                  }}
+                >
+                  <Droplets className="h-4 w-4" style={{ color: '#5B9BD5' }} />
+                  <span className="text-[9px]" style={{ color: '#999497' }}>
+                    {t('maker.waterTank')}
+                  </span>
+                  <span
+                    className="text-[11px] font-bold"
+                    style={{ color: '#221122' }}
+                  >
+                    {formatVolumeFromMl(deviceData.waterAmount * 1000, unit)}
+                  </span>
+                </motion.button>
+              </div>
+            </div>
+
+            <AnimatePresence initial={false} mode="wait">
+              {resourcePopup && (
+                <motion.div
+                  id="resource-detail-panel"
+                  key={resourcePopup}
+                  initial={{ opacity: 0, y: 6, scale: 0.97 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 6, scale: 0.97 }}
+                  transition={{ duration: 0.18, ease: 'easeOut' }}
+                  className="absolute bottom-[78px] z-20 rounded-[16px] px-2.5 py-2"
+                  style={{
+                    width:
+                      resourcePopup === 'powder'
+                        ? '174px'
+                        : resourcePopup === 'formula'
+                          ? '214px'
+                          : '218px',
+                    left:
+                      resourcePopup === 'powder'
+                        ? '0'
+                        : resourcePopup === 'formula'
+                          ? '50%'
+                          : undefined,
+                    right: resourcePopup === 'water' ? '0' : undefined,
+                    marginLeft:
+                      resourcePopup === 'formula' ? '-107px' : undefined,
+                    background: 'rgba(255,255,255,0.99)',
+                    boxShadow:
+                      '0 8px 24px rgba(72,48,34,0.12), 0 2px 6px rgba(72,48,34,0.06)',
+                  }}
+                >
+                  <div
+                    className="absolute -bottom-[4px] h-2 w-2"
+                    style={{
+                      left:
+                        resourcePopup === 'powder'
+                          ? '32%'
+                          : resourcePopup === 'formula'
+                            ? '50%'
+                            : '74%',
+                      transform: 'translateX(-50%) rotate(45deg)',
+                      background: 'white',
+                    }}
+                  />
+                  <div className="mb-1.5 flex items-center gap-1.5">
+                    {resourcePopup === 'powder' ? (
                       <FlaskConical
                         className="h-3.5 w-3.5"
                         style={{
                           color: mixingChamberBlocked ? '#DC2626' : '#C4956A',
                         }}
                       />
-                      <span
-                        className="text-[13px] font-semibold"
-                        style={{ color: '#221122' }}
-                      >
-                        {t('maker.mixingChamber')}
-                      </span>
-                    </div>
-                    <div className="mb-2 flex items-center justify-between">
-                      <span
-                        className="text-[11px]"
-                        style={{ color: '#999497' }}
-                      >
-                        {t('maker.useCount')}
-                      </span>
-                      <span
-                        className="text-[14px] font-bold"
-                        style={{
-                          color: mixingChamberBlocked ? '#DC2626' : '#221122',
-                        }}
-                      >
-                        {mixingChamberCount}
-                      </span>
-                    </div>
-                    {mixingChamberBlocked && (
-                      <div
-                        className="mt-1 flex items-center gap-1 rounded-[8px] px-2 py-1.5"
-                        style={{ background: '#FEF2F2' }}
-                      >
-                        <AlertTriangle
-                          className="h-3 w-3 shrink-0"
-                          style={{ color: '#DC2626' }}
-                        />
-                        <span
-                          className="text-[11px] leading-tight"
-                          style={{ color: '#DC2626' }}
-                        >
-                          {t('maker.cleanDue')}
-                        </span>
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Water Level Indicator - Right */}
-            <div
-              className="absolute top-1/2 z-10 -translate-y-1/2"
-              style={{ left: 'calc(50% + 60px)' }}
-            >
-              <motion.button
-                whileTap={{ scale: 0.92 }}
-                onClick={() =>
-                  setResourcePopup(resourcePopup === 'water' ? null : 'water')
-                }
-                className="flex flex-col items-center gap-1 rounded-[16px] px-2.5 py-3"
-                style={{
-                  background: 'white',
-                  boxShadow:
-                    '4px 4px 10px hsl(330 10% 85% / 0.3), -4px -4px 10px hsl(0 0% 100% / 0.8)',
-                }}
-              >
-                <Droplets className="h-4 w-4" style={{ color: '#5B9BD5' }} />
-                <span
-                  className="text-[11px] font-bold"
-                  style={{ color: '#221122' }}
-                >
-                  {(deviceData.waterAmount * 33.814).toFixed(1)}oz
-                </span>
-              </motion.button>
-              <AnimatePresence>
-                {resourcePopup === 'water' && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -6, scale: 0.9 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -6, scale: 0.9 }}
-                    transition={{ duration: 0.2, ease: 'easeOut' }}
-                    className="absolute right-0 z-20 w-[196px] rounded-[18px] p-3"
-                    style={{
-                      top: 'calc(100% + 6px)',
-                      background: 'white',
-                      boxShadow:
-                        '0 8px 30px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)',
-                    }}
-                  >
-                    <div className="mb-2 flex items-center gap-1.5">
+                    ) : resourcePopup === 'formula' ? (
+                      <Milk
+                        className="h-3.5 w-3.5"
+                        style={{ color: '#8B4A1B' }}
+                      />
+                    ) : (
                       <Droplets
                         className="h-3.5 w-3.5"
                         style={{ color: '#5B9BD5' }}
                       />
-                      <span
-                        className="text-[13px] font-semibold"
-                        style={{ color: '#221122' }}
-                      >
-                        {t('maker.waterTank')}
-                      </span>
-                    </div>
-                    <div className="mb-1.5 flex items-center justify-between">
-                      <span
-                        className="text-[11px]"
-                        style={{ color: '#999497' }}
-                      >
-                        {t('maker.remaining')}
-                      </span>
-                      <span
-                        className="text-[12px] font-semibold"
-                        style={{ color: '#221122' }}
-                      >
-                        {(deviceData.waterAmount * 33.814).toFixed(1)} oz /{' '}
-                        {(deviceData.waterCapacity * 33.814).toFixed(1)} oz
-                      </span>
-                    </div>
-                    <div
-                      className="mb-2 h-[5px] overflow-hidden rounded-full"
-                      style={{ background: '#F0EFEE' }}
+                    )}
+                    <span
+                      className="text-[12px] font-semibold"
+                      style={{ color: '#221122' }}
                     >
+                      {resourcePopup === 'powder'
+                        ? t('maker.mixingChamber')
+                        : resourcePopup === 'formula'
+                          ? t('maker.formulaCan')
+                          : t('maker.waterTank')}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label="关闭详情"
+                      title="关闭详情"
+                      onClick={() => setResourcePopup(null)}
+                      className="ml-auto flex h-4 w-4 items-center justify-center rounded-full"
+                      style={{ background: '#F5F3F2', color: '#99918D' }}
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  </div>
+
+                  {resourcePopup === 'powder' && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span
+                          className="text-[11px]"
+                          style={{ color: '#999497' }}
+                        >
+                          {t('maker.useCount')}
+                        </span>
+                        <span
+                          className="text-[13px] font-bold"
+                          style={{
+                            color: mixingChamberBlocked ? '#DC2626' : '#221122',
+                          }}
+                        >
+                          {mixingChamberCount}次
+                        </span>
+                      </div>
+                      {mixingChamberBlocked && (
+                        <div
+                          className="mt-1.5 flex items-center gap-1 rounded-[7px] px-2 py-1"
+                          style={{ background: '#FEF2F2' }}
+                        >
+                          <AlertTriangle
+                            className="h-3 w-3 shrink-0"
+                            style={{ color: '#DC2626' }}
+                          />
+                          <span
+                            className="text-[11px] leading-tight"
+                            style={{ color: '#DC2626' }}
+                          >
+                            {t('maker.cleanDue')}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {resourcePopup === 'formula' && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span
+                          className="text-[11px]"
+                          style={{ color: '#999497' }}
+                        >
+                          {t('maker.remaining')}
+                        </span>
+                        <span
+                          className="text-[13px] font-bold"
+                          style={{ color: '#221122' }}
+                        >
+                          {t('maker.powderCupsRemaining', {
+                            cups: POWDER_REMAINING_CUPS,
+                            grams: POWDER_REMAINING_GRAMS,
+                          })}
+                        </span>
+                      </div>
                       <div
-                        className="h-full rounded-full"
-                        style={{
-                          width: `${Math.round((deviceData.waterAmount / deviceData.waterCapacity) * 100)}%`,
-                          background: '#5B9BD5',
-                        }}
-                      />
-                    </div>
-                    <div
-                      className="mb-2 flex items-center justify-between border-y py-2"
-                      style={{ borderColor: '#F0EFEE' }}
-                    >
-                      <span
-                        className="text-[11px]"
-                        style={{ color: '#999497' }}
+                        className="mt-1.5 rounded-[7px] px-2 py-1.5 text-[9px] leading-relaxed"
+                        style={{ color: '#7A6E68', background: '#F8F3EE' }}
                       >
-                        {t('maker.waterQualityTds')}
-                      </span>
-                      <div className="flex items-center gap-1.5">
+                        {t('maker.powderAverageBasis', {
+                          grams: POWDER_PER_CUP_GRAMS,
+                        })}
+                      </div>
+                    </>
+                  )}
+
+                  {resourcePopup === 'water' && (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span
+                          className="text-[11px]"
+                          style={{ color: '#999497' }}
+                        >
+                          {t('maker.remaining')}
+                        </span>
                         <span
                           className="text-[12px] font-semibold"
                           style={{ color: '#221122' }}
                         >
-                          {deviceData.waterTds} ppm
-                        </span>
-                        <span
-                          className="rounded-full px-1.5 py-1 text-[10px] font-semibold leading-none"
-                          style={{
-                            color: waterQuality.color,
-                            background: waterQuality.background,
-                          }}
-                        >
-                          {waterQuality.label}
+                          {formatVolumeFromMl(deviceData.waterAmount * 1000, unit)}{' '}
+                          /{' '}
+                          {formatVolumeFromMl(deviceData.waterCapacity * 1000, unit)}
                         </span>
                       </div>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span
-                        className="text-[11px]"
-                        style={{ color: '#999497' }}
-                      >
-                        {t('maker.lastRefill')}
-                      </span>
-                      <span
-                        className="text-[12px] font-medium"
-                        style={{ color: '#221122' }}
-                      >
-                        {dayjs(deviceData.lastWaterRefill).format(
-                          'MM/DD HH:mm',
-                        )}
-                      </span>
-                    </div>
-                    {waterStale && (
                       <div
-                        className="mt-2 flex items-center gap-1 rounded-[8px] px-2 py-1.5"
-                        style={{ background: '#FFF7ED' }}
+                        className="mb-1.5 mt-1 h-[4px] overflow-hidden rounded-full"
+                        style={{ background: '#F0EFEE' }}
                       >
-                        <AlertTriangle
-                          className="h-3 w-3 shrink-0"
-                          style={{ color: '#E67E22' }}
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${Math.round((deviceData.waterAmount / deviceData.waterCapacity) * 100)}%`,
+                            background: '#5B9BD5',
+                          }}
                         />
+                      </div>
+                      <div
+                        className="flex items-center justify-between border-y py-1.5"
+                        style={{ borderColor: '#F0EFEE' }}
+                      >
                         <span
-                          className="text-[11px] leading-tight"
-                          style={{ color: '#E67E22' }}
+                          className="text-[11px]"
+                          style={{ color: '#999497' }}
                         >
-                          {t('maker.waterStale')}
+                          {t('maker.waterQualityTds')}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className="text-[12px] font-semibold"
+                            style={{ color: '#221122' }}
+                          >
+                            {deviceData.waterTds} ppm
+                          </span>
+                          <span
+                            className="rounded-full px-1.5 py-1 text-[10px] font-semibold leading-none"
+                            style={{
+                              color: waterQuality.color,
+                              background: waterQuality.background,
+                            }}
+                          >
+                            {waterQuality.label}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-1.5 flex items-center justify-between">
+                        <span
+                          className="text-[11px]"
+                          style={{ color: '#999497' }}
+                        >
+                          {t('maker.lastRefill')}
+                        </span>
+                        <span
+                          className="text-[12px] font-medium"
+                          style={{ color: '#221122' }}
+                        >
+                          {dayjs(deviceData.lastWaterRefill).format(
+                            'MM/DD HH:mm',
+                          )}
                         </span>
                       </div>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-            {/* Last Feed Info */}
-            <motion.button
-              whileTap={{ scale: 0.97 }}
-              onClick={() => navigate('/feeding-stats')}
-              className="absolute bottom-0 left-1/2 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-[10px] px-3 py-1.5"
-            >
-              <span className="text-[11px]" style={{ color: '#999497' }}>
-                {lastFeeding
-                  ? `${t('maker.lastFeed')}: ${lastFeeding.oz}oz · ${lastFeeding.time}`
-                  : `${t('maker.lastFeed')}: 4oz · 06:30`}
-              </span>
-              <BarChart3 className="h-3.5 w-3.5" style={{ color: '#8B4A1B' }} />
-            </motion.button>
-          </div>
+                      {waterStale && (
+                        <div
+                          className="mt-2 flex items-center gap-1 rounded-[8px] px-2 py-1.5"
+                          style={{ background: '#FFF7ED' }}
+                        >
+                          <AlertTriangle
+                            className="h-3 w-3 shrink-0"
+                            style={{ color: '#E67E22' }}
+                          />
+                          <span
+                            className="text-[11px] leading-tight"
+                            style={{ color: '#E67E22' }}
+                          >
+                            {t('maker.waterStale')}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
 
           {/* Mode Toggle */}
           <div
@@ -1146,7 +1287,10 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                 <p className="mt-0.5 text-[13px]" style={{ color: '#999497' }}>
                   {t('maker.formulaRatioConfigured', {
                     powder: formulaProfile.powderPerScoop.toString(),
-                    water: formulaProfile.waterPerScoop.toString(),
+                    water: formatVolumeFromOz(
+                      formulaProfile.waterPerScoop,
+                      unit,
+                    ),
                   })}
                 </p>
               </div>
@@ -1184,15 +1328,8 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                 >
                   <StepperButton2
                     icon={<Minus className="h-5 w-5" />}
-                    disabled={waterAmount <= WATER_CONFIG[mode].min}
-                    onClick={() =>
-                      setWaterAmount(
-                        Math.max(
-                          WATER_CONFIG[mode].min,
-                          waterAmount - WATER_CONFIG[mode].step,
-                        ),
-                      )
-                    }
+                    disabled={displayedWaterAmount <= displayedWaterMin}
+                    onClick={() => adjustWaterAmount(-1)}
                   />
                   <motion.span
                     key={waterAmount}
@@ -1201,19 +1338,12 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                     className="flex-1 text-center text-[17px] font-semibold"
                     style={{ color: '#221122' }}
                   >
-                    {waterAmount} oz
+                    {displayedWaterAmount} {unit}
                   </motion.span>
                   <StepperButton2
                     icon={<Plus className="h-5 w-5" />}
-                    disabled={waterAmount >= WATER_CONFIG[mode].max}
-                    onClick={() =>
-                      setWaterAmount(
-                        Math.min(
-                          WATER_CONFIG[mode].max,
-                          waterAmount + WATER_CONFIG[mode].step,
-                        ),
-                      )
-                    }
+                    disabled={displayedWaterAmount >= displayedWaterMax}
+                    onClick={() => adjustWaterAmount(1)}
                   />
                 </div>
                 {mode === 'milk' && (
@@ -1228,7 +1358,10 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                           formulaProfile.powderPerScoop
                         ).toFixed(2),
                       ).toString(),
-                      water: formulaProfile.waterPerScoop.toString(),
+                      water: formatVolumeFromOz(
+                        formulaProfile.waterPerScoop,
+                        unit,
+                      ),
                     })}
                   </p>
                 )}
@@ -1378,63 +1511,6 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                 />
               </motion.button>
             </div>
-
-            <AnimatePresence initial={false}>
-              {nightLight && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2, ease: 'easeOut' }}
-                  className="overflow-hidden"
-                >
-                  <div
-                    className="mt-3 border-t pt-3"
-                    style={{ borderColor: '#F0EEEE' }}
-                  >
-                    <div className="mb-2 flex items-center justify-between">
-                      <span
-                        className="text-[13px]"
-                        style={{ color: '#777277' }}
-                      >
-                        {t('maker.nightLightBrightness')}
-                      </span>
-                      <motion.span
-                        key={nightLightBrightness}
-                        initial={{ opacity: 0.6, y: 2 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-[13px] font-semibold tabular-nums"
-                        style={{ color: '#7D3C0F' }}
-                      >
-                        {nightLightBrightness}%
-                      </motion.span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <SunDim
-                        className="h-4 w-4 shrink-0"
-                        style={{ color: '#B7B1B4' }}
-                      />
-                      <input
-                        type="range"
-                        min="10"
-                        max="100"
-                        step="10"
-                        value={nightLightBrightness}
-                        aria-label={t('maker.nightLightBrightness')}
-                        onChange={(event) =>
-                          setNightLightBrightness(Number(event.target.value))
-                        }
-                        className="h-1.5 flex-1 cursor-pointer accent-[#7D3C0F]"
-                      />
-                      <Sun
-                        className="h-5 w-5 shrink-0"
-                        style={{ color: '#7D3C0F' }}
-                      />
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
 
           {/* Feeding Stats */}
@@ -1469,60 +1545,86 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
 
         {/* Start Button - Fixed at bottom */}
         <div
-          className={`relative z-10 px-5 pb-6 pt-2 ${isBlocked ? 'pointer-events-none opacity-40' : ''}`}
+          className="relative z-10 shrink-0 px-5 pb-6 pt-2"
+          style={{
+            background:
+              'linear-gradient(to bottom, rgba(248,247,245,0.72) 0%, rgba(248,247,245,0.96) 22%, #F8F7F5 48%)',
+            backdropFilter: 'blur(8px)',
+          }}
         >
-          <button
-            type="button"
-            disabled={isBlocked}
-            onClick={() => {
-              if (waterLowDismissable && waterLowDismissed) {
-                setWaterLowDismissed(false);
-                return;
-              }
-              if (powderErrorDismissable && powderErrorDismissed) {
-                setPowderErrorDismissed(false);
-                return;
-              }
-              if (isMaking) {
-                handleStop();
-              } else {
-                handleStart();
-              }
-            }}
-            className="relative flex h-[52px] w-full cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-[26px] text-[17px] font-semibold text-white transition-all duration-150 active:scale-[0.98] disabled:cursor-not-allowed"
-            style={{
-              backgroundColor: isBlocked ? '#B0B0B0' : '#7D3C0F',
-              boxShadow: isMaking
-                ? '0px 6px 16px rgba(125,60,15,0.3), 0 0 20px rgba(255,180,100,0.3)'
-                : '0px 6px 16px rgba(125,60,15,0.3)',
-            }}
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate('/feeding-stats')}
+            className="mb-1.5 flex h-5 w-full items-center justify-center gap-2 whitespace-nowrap"
           >
-            {isMaking && (
-              <div
-                className="absolute left-0 top-0 h-full transition-all duration-100 ease-linear"
-                style={{
-                  width: `${progress}%`,
-                  background:
-                    'linear-gradient(90deg, rgba(255,200,140,0.45) 0%, rgba(255,220,170,0.55) 60%, rgba(255,235,195,0.6) 100%)',
-                  borderRadius: '26px 0 0 26px',
-                }}
-              />
-            )}
-            <span className="relative z-10 flex items-center gap-2">
-              {isMaking ? (
-                <Square className="h-4 w-4 fill-current" />
-              ) : (
-                <Play className="h-5 w-5 fill-current" />
-              )}
-              {isMaking
-                ? t('maker.stop')
-                : formulaSetupRequired
-                  ? t('maker.configureFormulaFirst')
-                  : mode === 'milk'
-                    ? t('maker.makeFormula')
-                    : t('maker.dispenseWater')}
+            <span className="text-[11px]" style={{ color: '#999497' }}>
+              {t('maker.lastFeed')}
             </span>
-          </button>
+            <span
+              className="text-[12px] font-medium tabular-nums"
+              style={{ color: '#5E555A' }}
+            >
+              {lastFeeding
+                ? `${lastFeeding.time} · ${formatVolumeFromOz(lastFeeding.oz, unit)}`
+                : `06:30 · ${formatVolumeFromOz(4, unit)}`}
+            </span>
+            <BarChart3 className="h-3.5 w-3.5" style={{ color: '#8B4A1B' }} />
+          </motion.button>
+
+          <div className={isBlocked ? 'pointer-events-none opacity-40' : ''}>
+            <button
+              type="button"
+              disabled={isBlocked}
+              onClick={() => {
+                if (waterLowDismissable && waterLowDismissed) {
+                  setWaterLowDismissed(false);
+                  return;
+                }
+                if (powderErrorDismissable && powderErrorDismissed) {
+                  setPowderErrorDismissed(false);
+                  return;
+                }
+                if (isMaking) {
+                  handleStop();
+                } else {
+                  handleStart();
+                }
+              }}
+              className="relative flex h-[52px] w-full cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-[26px] text-[17px] font-semibold text-white transition-all duration-150 active:scale-[0.98] disabled:cursor-not-allowed"
+              style={{
+                backgroundColor: isBlocked ? '#B0B0B0' : '#7D3C0F',
+                boxShadow: isMaking
+                  ? '0px 6px 16px rgba(125,60,15,0.3), 0 0 20px rgba(255,180,100,0.3)'
+                  : '0px 6px 16px rgba(125,60,15,0.3)',
+              }}
+            >
+              {isMaking && (
+                <div
+                  className="absolute left-0 top-0 h-full transition-all duration-100 ease-linear"
+                  style={{
+                    width: `${progress}%`,
+                    background:
+                      'linear-gradient(90deg, rgba(255,200,140,0.45) 0%, rgba(255,220,170,0.55) 60%, rgba(255,235,195,0.6) 100%)',
+                    borderRadius: '26px 0 0 26px',
+                  }}
+                />
+              )}
+              <span className="relative z-10 flex items-center gap-2">
+                {isMaking ? (
+                  <Square className="h-4 w-4 fill-current" />
+                ) : (
+                  <Play className="h-5 w-5 fill-current" />
+                )}
+                {isMaking
+                  ? t('maker.stop')
+                  : formulaSetupRequired
+                    ? t('maker.configureFormulaFirst')
+                    : mode === 'milk'
+                      ? t('maker.makeFormula')
+                      : t('maker.dispenseWater')}
+              </span>
+            </button>
+          </div>
         </div>
 
         {/* Completion Toast */}

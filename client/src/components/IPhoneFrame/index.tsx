@@ -1,6 +1,7 @@
 import React, { type ReactNode, useState } from 'react';
 import { useTranslation } from '@client/src/hooks/useTranslation';
 import { Cable, RotateCcw } from 'lucide-react';
+import { useVolumeUnit } from '@client/src/contexts/VolumeUnitContext';
 
 interface IPhoneFrameProps {
   children: ReactNode;
@@ -14,6 +15,7 @@ const IPhoneFrame: React.FC<IPhoneFrameProps> = ({
   overlay,
 }) => {
   const { language, setLanguage } = useTranslation();
+  const { unit, setUnit } = useVolumeUnit();
   const [showInteractionLines, setShowInteractionLines] = useState(
     () => localStorage.getItem('show_interaction_lines') !== 'false',
   );
@@ -49,6 +51,29 @@ const IPhoneFrame: React.FC<IPhoneFrameProps> = ({
               }
             >
               {lang === 'zh' ? '中' : 'EN'}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-1.5 grid grid-cols-2 rounded-[8px] bg-black/[0.05] p-0.5">
+          {(['ml', 'oz'] as const).map((volumeUnit) => (
+            <button
+              key={volumeUnit}
+              type="button"
+              onClick={() => setUnit(volumeUnit)}
+              aria-label={`${volumeUnit} unit`}
+              className="flex h-6 items-center justify-center rounded-[6px] text-[9px] font-medium transition-all duration-200"
+              style={
+                unit === volumeUnit
+                  ? {
+                      background: 'white',
+                      color: '#4B403B',
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.10)',
+                    }
+                  : { background: 'transparent', color: '#AAA4A1' }
+              }
+            >
+              {volumeUnit}
             </button>
           ))}
         </div>

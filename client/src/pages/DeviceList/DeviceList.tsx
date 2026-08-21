@@ -5,13 +5,18 @@ import { useNavigate } from 'react-router-dom';
 import IPhoneFrame from '@client/src/components/IPhoneFrame';
 import { useTranslation } from '@client/src/hooks/useTranslation';
 import { Image } from '@client/src/components/ui/image';
+import deviceImage from '@/assets/fd06-device.png';
+import {
+  formatVolumeFromMl,
+  useVolumeUnit,
+} from '@client/src/contexts/VolumeUnitContext';
 
-const DEVICE_IMAGE_URL =
-  'https://miaoda.feishu.cn/aily/api/v1/feisuda/attachments/daec42b9-b358-4b36-991a-a3d017d61fa1/raw';
+const DEVICE_IMAGE_URL = deviceImage;
 
 const DeviceList: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { unit } = useVolumeUnit();
 
   const handleDeviceClick = () => {
     navigate('/device');
@@ -177,7 +182,7 @@ const DeviceList: React.FC = () => {
                     className="text-[13px]"
                     style={{ color: '#7a3d17', fontWeight: 500 }}
                   >
-                    180ml
+                    {formatVolumeFromMl(180, unit)}
                   </span>
                 </div>
               </div>

@@ -111,6 +111,15 @@ const translations: Record<string, Record<Language, string>> = {
   },
   'maker.tubeCleanGo': { zh: '去清洁', en: 'Clean Now' },
   'maker.powderHopper': { zh: '粉仓', en: 'Powder Hopper' },
+  'maker.formulaCan': { zh: '奶粉罐', en: 'Formula Can' },
+  'maker.powderCupsRemaining': {
+    zh: '约{cups}杯（{grams}g）',
+    en: 'About {cups} cups ({grams} g)',
+  },
+  'maker.powderAverageBasis': {
+    zh: '近7日平均{grams}g/杯计算',
+    en: '7-day avg. {grams} g/cup',
+  },
   'maker.remaining': { zh: '剩余', en: 'Remaining' },
   'maker.lastRefill': { zh: '上次补充', en: 'Last Refill' },
   'maker.waterTank': { zh: '水箱', en: 'Water Tank' },
@@ -131,8 +140,8 @@ const translations: Record<string, Record<Language, string>> = {
     en: '1 scoop (8.8 g) per 2 oz of water',
   },
   'maker.formulaRatioConfigured': {
-    zh: '每{water}oz水配1勺（{powder}g）奶粉',
-    en: '1 scoop ({powder} g) per {water} oz of water',
+    zh: '每{water}水配1勺（{powder}g）奶粉',
+    en: '1 scoop ({powder} g) per {water} of water',
   },
   'maker.firstUseFormulaTitle': {
     zh: '首次使用请确认宝宝的奶粉配比信息',
@@ -154,8 +163,8 @@ const translations: Record<string, Record<Language, string>> = {
     en: 'Mix with {amount}g powder (1 scoop / 2oz)',
   },
   'maker.mixWithConfigured': {
-    zh: '配{amount}g奶粉（1勺/{water}oz）',
-    en: 'Mix with {amount}g powder (1 scoop / {water}oz)',
+    zh: '配{amount}g奶粉（1勺/{water}）',
+    en: 'Mix with {amount}g powder (1 scoop / {water})',
   },
   'maker.waterTemp': { zh: '水温', en: 'Water Temp' },
   'maker.roomTemp': { zh: '常温', en: 'Room Temp' },
@@ -212,8 +221,8 @@ const translations: Record<string, Record<Language, string>> = {
   },
   'result.dailySummary': { zh: '每日摘要', en: 'Daily Summary' },
   'result.todayCup': {
-    zh: '第{count}杯 · 共{total}mL',
-    en: 'Cup #{count} · {total}mL total',
+    zh: '第{count}杯 · 共{total}',
+    en: 'Cup #{count} · {total} total',
   },
   'result.lastFeeding': { zh: '上次喂养', en: 'Last Feeding' },
   'result.waterOutput': { zh: '出水量', en: 'Water Output' },
@@ -439,8 +448,8 @@ const translations: Record<string, Record<Language, string>> = {
   'powderWater.waterTank': { zh: '水箱', en: 'Water Tank' },
   'powderWater.currentWater': { zh: '当前水量', en: 'Current Water' },
   'powderWater.waterRange': {
-    zh: '范围：0 ~ {capacity} oz',
-    en: 'Range: 0 ~ {capacity} oz',
+    zh: '范围：0 ~ {capacity} {unit}',
+    en: 'Range: 0 ~ {capacity} {unit}',
   },
   'powderWater.saved': { zh: '已保存', en: 'Saved' },
   'powderWater.dataUpdated': {
@@ -559,11 +568,11 @@ const translations: Record<string, Record<Language, string>> = {
   // FeedingStats
   'feedingStats.title': { zh: '喂养统计', en: 'Feeding Stats' },
   'feedingStats.today': { zh: '今天', en: 'Today' },
-  'feedingStats.mlTotal': { zh: 'ml 总量', en: 'ml total' },
+  'feedingStats.mlTotal': { zh: '{unit} 总量', en: '{unit} total' },
   'feedingStats.feedings': { zh: '喂奶次数', en: 'Feedings' },
   'feedingStats.times': { zh: '次', en: 'times' },
   'feedingStats.average': { zh: '平均', en: 'Average' },
-  'feedingStats.mlPerFeed': { zh: 'ml/次', en: 'ml / feed' },
+  'feedingStats.mlPerFeed': { zh: '{unit}/次', en: '{unit} / feed' },
   'feedingStats.tab.daily': { zh: '每日', en: 'Daily' },
   'feedingStats.tab.weekly': { zh: '每周', en: 'Weekly' },
   'feedingStats.tab.monthly': { zh: '每月', en: 'Monthly' },
@@ -710,7 +719,7 @@ const translations: Record<string, Record<Language, string>> = {
   'feedingRecord.type.breastfeed': { zh: '亲喂', en: 'Breastfeed' },
   'feedingRecord.type.bottle': { zh: '瓶喂', en: 'Bottle' },
   'feedingRecord.type.formula': { zh: '奶粉', en: 'Formula' },
-  'feedingRecord.amount': { zh: '奶量 (ml)', en: 'Amount (ml)' },
+  'feedingRecord.amount': { zh: '奶量 ({unit})', en: 'Amount ({unit})' },
   'feedingRecord.time': { zh: '喂养时间', en: 'Feeding Time' },
   'feedingRecord.selectDate': { zh: '选择日期', en: 'Select date' },
   'feedingRecord.startTime': { zh: '开始时间', en: 'Start time' },
@@ -740,8 +749,8 @@ const translations: Record<string, Record<Language, string>> = {
   'demo.formulaRatio.active': { zh: '当前使用', en: 'Active' },
   'demo.formulaRatio.edit': { zh: '编辑', en: 'Edit' },
   'demo.formulaRatio.scoopInfo': {
-    zh: '1勺({scoopGrams}g)配{waterOz}oz水',
-    en: '1 scoop ({scoopGrams} g) per {waterOz} oz of water',
+    zh: '1勺({scoopGrams}g)配{water}水',
+    en: '1 scoop ({scoopGrams} g) per {water} of water',
   },
   'demo.formulaEdit.title': {
     zh: '识别结果确认',
@@ -802,8 +811,12 @@ const translations: Record<string, Record<Language, string>> = {
   'demo.formulaEdit.waterPerScoop': { zh: '每勺水量', en: 'Water per Scoop' },
   'demo.formulaEdit.mixingRatio': { zh: '混合比例', en: 'Mixing Ratio' },
   'demo.formulaEdit.mixingRatioDetail': {
-    zh: '{powder}g奶粉配{water}oz水',
-    en: '{powder} g of powder per {water} oz of water',
+    zh: '{powder}g奶粉配{water}{unit}水',
+    en: '{powder} g of powder per {water} {unit} of water',
+  },
+  'demo.formulaEdit.ratioOutOfRange': {
+    zh: '粉水配比超过正常范围',
+    en: 'The powder-to-water ratio exceeds the normal range',
   },
   'demo.captureFormulaFront.title': {
     zh: '添加配方信息',

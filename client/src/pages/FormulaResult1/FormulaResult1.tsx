@@ -4,6 +4,11 @@ import { useNavigate } from "react-router-dom";
 import { Coffee, Timer } from "lucide-react";
 import IPhoneFrame from "@client/src/components/IPhoneFrame";
 import { useTranslation } from "@client/src/hooks/useTranslation";
+import {
+  formatVolumeFromMl,
+  formatVolumeFromOz,
+  useVolumeUnit,
+} from "@client/src/contexts/VolumeUnitContext";
 
 const FORMULA_RESULT_KEY = "formula_result";
 interface FeedingStats {
@@ -49,6 +54,7 @@ const DEMO_DATA: FormulaResultData = {
 const FormulaResult1: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { unit } = useVolumeUnit();
 
   const savedRaw = sessionStorage.getItem(FORMULA_RESULT_KEY);
   const data: FormulaResultData = savedRaw ? JSON.parse(savedRaw) : DEMO_DATA;
@@ -164,7 +170,7 @@ const FormulaResult1: React.FC = () => {
               >
                 <p className="text-[11px]" style={{ color: "#999" }}>{t("result.target")}</p>
                 <p className="mt-0.5 text-[15px] font-bold" style={{ color: "#221122" }}>
-                  {data.totalMilkTargetOz} oz
+                  {formatVolumeFromOz(data.totalMilkTargetOz, unit)}
                 </p>
 
               </div>
@@ -176,7 +182,7 @@ const FormulaResult1: React.FC = () => {
                 <p className="mt-0.5 text-[15px] font-bold" style={{
                   color: milkMet ? "#22C55E" : "#EF4444",
                 }}>
-                  {data.totalMilkActualOz} oz
+                  {formatVolumeFromOz(data.totalMilkActualOz, unit)}
                 </p>
 
               </div>
@@ -241,7 +247,13 @@ const FormulaResult1: React.FC = () => {
                     {t("common.today")}
                   </span>
                   <span className="text-[14px] font-bold" style={{ color: "#7D3C0F" }}>
-                    {t("result.todayCup", { count: data.feedingStats.todayCupCount, total: data.feedingStats.todayCumulativeMl })}
+                    {t("result.todayCup", {
+                      count: data.feedingStats.todayCupCount,
+                      total: formatVolumeFromMl(
+                        data.feedingStats.todayCumulativeMl,
+                        unit,
+                      ),
+                    })}
                   </span>
                 </div>
                 {data.feedingStats.lastFeedingMl > 0 && (
@@ -252,7 +264,11 @@ const FormulaResult1: React.FC = () => {
                     <div className="flex items-center gap-1">
                       <Timer className="h-3 w-3" style={{ color: "#999" }} />
                       <span className="text-[13px] font-medium" style={{ color: "#555" }}>
-                        {data.feedingStats.lastFeedingMl}mL ·{" "}
+                        {formatVolumeFromMl(
+                          data.feedingStats.lastFeedingMl,
+                          unit,
+                        )}{" "}
+                        ·{" "}
                         {data.feedingStats.lastFeedingElapsedH > 0 &&
                           `${data.feedingStats.lastFeedingElapsedH}h `}
                         {data.feedingStats.lastFeedingElapsedM}m ago

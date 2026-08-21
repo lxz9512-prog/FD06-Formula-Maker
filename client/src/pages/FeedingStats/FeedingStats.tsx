@@ -8,6 +8,13 @@ import { ArrowLeft, Plus, ChevronLeft, ChevronRight, BookOpen, ChevronRight as C
 import dayjs from "dayjs";
 import IPhoneFrame from "@client/src/components/IPhoneFrame";
 import FeedingRecordForm from "@client/src/pages/AddFeedingRecord/FeedingRecordForm";
+import {
+  ML_PER_OZ,
+  formatVolumeFromMl,
+  roundVolume,
+  useVolumeUnit,
+  type VolumeUnit,
+} from "@client/src/contexts/VolumeUnitContext";
 
 type TimeTab = "Daily" | "Weekly" | "Monthly";
 
@@ -28,7 +35,8 @@ const AVG_PER_FEED = 120;
 
 function buildLineOption(
   labels: string[],
-  data: number[]
+  data: number[],
+  unit: VolumeUnit,
 ): EChartsOption {
   const option: EChartsOption = {
     tooltip: {
@@ -61,7 +69,7 @@ function buildLineOption(
     },
     yAxis: {
       type: "value",
-      name: "ml",
+      name: unit,
       nameLocation: "end",
       nameTextStyle: {
         color: "#999497",
@@ -168,6 +176,7 @@ const DATE_BTN_STYLE = {
 const FeedingStats: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { unit } = useVolumeUnit();
   const [activeTab, setActiveTab] = useState<TimeTab>("Daily");
   const [selectedDate, setSelectedDate] = useState(dayjs());
   const [selectedWeekStart, setSelectedWeekStart] = useState(dayjs().startOf("week"));
@@ -243,13 +252,15 @@ const FeedingStats: React.FC = () => {
   };
 
   const getChartOption = (): EChartsOption => {
+    const convertData = (data: number[]) =>
+      unit === "ml" ? data : data.map((value) => roundVolume(value / ML_PER_OZ));
     if (activeTab === "Daily") {
-      return buildLineOption(DAILY_LABELS, DAILY_DATA);
+      return buildLineOption(DAILY_LABELS, convertData(DAILY_DATA), unit);
     }
     if (activeTab === "Weekly") {
-      return buildLineOption(weeklyLabels, WEEKLY_DATA);
+      return buildLineOption(weeklyLabels, convertData(WEEKLY_DATA), unit);
     }
-    return buildLineOption(monthlyLabels, MONTHLY_DATA);
+    return buildLineOption(monthlyLabels, convertData(MONTHLY_DATA), unit);
   };
 
   return (
@@ -274,9 +285,9 @@ const FeedingStats: React.FC = () => {
 
         <div className="flex-1 space-y-3 overflow-y-auto px-5 pb-4">
           <div className="flex gap-3">
-            <StatCard label={t("feedingStats.today")} value={`${TODAY_TOTAL}`} sub={t("feedingStats.mlTotal")} />
+            <StatCard label={t("feedingStats.today")} value={`${unit === "ml" ? TODAY_TOTAL : roundVolume(TODAY_TOTAL / ML_PER_OZ)}`} sub={t("feedingStats.mlTotal", { unit })} />
             <StatCard label={t("feedingStats.feedings")} value={`${TODAY_COUNT}`} sub={t("feedingStats.times")} />
-            <StatCard label={t("feedingStats.average")} value={`${AVG_PER_FEED}`} sub={t("feedingStats.mlPerFeed")} />
+            <StatCard label={t("feedingStats.average")} value={`${unit === "ml" ? AVG_PER_FEED : roundVolume(AVG_PER_FEED / ML_PER_OZ)}`} sub={t("feedingStats.mlPerFeed", { unit })} />
           </div>
 
           <div
@@ -421,7 +432,7 @@ const FeedingStats: React.FC = () => {
                     <div className="text-[14px] font-medium" style={{ color: "#221122" }}>
                       {record.type === "亲喂"
                         ? t("feedingStats.minutes", { count: record.durationMinutes })
-                        : `${record.amount}ml`}
+                        : formatVolumeFromMl(record.amount || 0, unit)}
                     </div>
                     <div className="mt-0.5 text-[12px]" style={{ color: "#999497" }}>
                       {record.time}

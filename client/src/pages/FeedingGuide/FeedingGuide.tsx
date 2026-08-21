@@ -4,6 +4,11 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, BookOpen, Heart, AlertCircle } from "lucide-react";
 import IPhoneFrame from "@client/src/components/IPhoneFrame";
+import {
+  ML_PER_OZ,
+  roundVolume,
+  useVolumeUnit,
+} from "@client/src/contexts/VolumeUnitContext";
 
 const STAT_CARD_SHADOW = "0px 4px 12px rgba(0,0,0,0.04)";
 
@@ -92,6 +97,16 @@ const WARNINGS = [
 const FeedingGuide: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { unit } = useVolumeUnit();
+
+  const formatGuideVolume = (value: string) => {
+    if (unit === "ml") return value;
+    return value
+      .replace(/\d+(?:\.\d+)?/g, (match) =>
+        String(roundVolume(Number(match) / ML_PER_OZ)),
+      )
+      .replace(/ml/g, "oz");
+  };
 
   const handleBack = () => {
     navigate("/feeding-stats");
@@ -102,6 +117,8 @@ const FeedingGuide: React.FC = () => {
     range: t(`feedingGuide.ageRange${i + 1}`),
     tip: t(`feedingGuide.ageTip${i + 1}`),
     frequency: t(`feedingGuide.ageFreq${i + 1}`),
+    singleAmount: formatGuideVolume(g.singleAmount),
+    dailyTotal: formatGuideVolume(g.dailyTotal),
   }));
 
   const tipsTranslated = [

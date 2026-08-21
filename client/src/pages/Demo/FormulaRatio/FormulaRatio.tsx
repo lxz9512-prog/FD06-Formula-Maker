@@ -5,6 +5,10 @@ import { motion } from 'framer-motion';
 import IPhoneFrame from '@client/src/components/IPhoneFrame';
 import { useTranslation } from '@client/src/hooks/useTranslation';
 import {
+  formatVolumeFromOz,
+  useVolumeUnit,
+} from '@client/src/contexts/VolumeUnitContext';
+import {
   readFormulaProfiles,
   readSelectedFormulaId,
   setActiveFormulaProfile,
@@ -13,6 +17,7 @@ import {
 const FormulaRatio: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { unit } = useVolumeUnit();
   const [profiles] = useState(readFormulaProfiles);
   const [selectedId, setSelectedId] = useState(readSelectedFormulaId);
   const orderedProfiles = [
@@ -115,7 +120,7 @@ const FormulaRatio: React.FC = () => {
                   >
                     {t('demo.formulaRatio.scoopInfo', {
                       scoopGrams: profile.powderPerScoop,
-                      waterOz: profile.waterPerScoop,
+                      water: formatVolumeFromOz(profile.waterPerScoop, unit),
                     })}
                   </p>
                 </div>

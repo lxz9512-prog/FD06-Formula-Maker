@@ -1,6 +1,7 @@
 import React from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { LanguageProvider } from './i18n/LanguageContext';
+import { VolumeUnitProvider } from './contexts/VolumeUnitContext';
 
 import Layout from './components/Layout';
 import NotFound from './pages/NotFound/NotFound';
@@ -37,7 +38,8 @@ import WaterCalibrationReminder from './pages/WaterCalibrationReminder/WaterCali
 const RoutesComponent = () => {
   return (
     <LanguageProvider>
-      <Routes>
+      <VolumeUnitProvider>
+        <Routes>
         <Route element={<Layout />}>
           <Route index element={<DeviceList />} />
           <Route path="device" element={<BabyFormulaMaker />} />
@@ -104,7 +106,8 @@ const RoutesComponent = () => {
           <Route path="tube-clean-reminder" element={<TubeCleanReminder />} />
         </Route>
         <Route path="*" element={<NotFound />} />
-      </Routes>
+        </Routes>
+      </VolumeUnitProvider>
     </LanguageProvider>
   );
 };

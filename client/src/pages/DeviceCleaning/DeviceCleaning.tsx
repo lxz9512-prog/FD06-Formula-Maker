@@ -19,6 +19,10 @@ import {
 import IPhoneFrame from "@client/src/components/IPhoneFrame";
 import { UniversalLink } from '@lark-apaas/client-toolkit/components/UniversalLink';
 import { useTranslation } from "@client/src/hooks/useTranslation";
+import {
+  formatVolumeFromMl,
+  useVolumeUnit,
+} from "@client/src/contexts/VolumeUnitContext";
 
 type CleaningMode = "descaling" | "sterilization";
 type CleaningStep = "select" | "prepare" | "running" | "pause" | "complete";
@@ -79,6 +83,17 @@ const getSterilizationSteps = (t: (key: string, params?: Record<string, string |
 const DeviceCleaning: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { unit } = useVolumeUnit();
+  const formatUnitText = (value: string) => {
+    if (unit === "ml") return value;
+    return value.replace(/(\d+(?:\.\d+)?)mL/g, (_, amount: string) =>
+      formatVolumeFromMl(Number(amount), unit),
+    );
+  };
+  const unitAwareT = (
+    key: string,
+    params?: Record<string, string | number>,
+  ) => formatUnitText(t(key, params));
   const [selectedMode, setSelectedMode] = useState<CleaningMode | null>(null);
   const [currentStep, setCurrentStep] = useState<CleaningStep>("select");
   const [runningPhase, setRunningPhase] = useState<RunningPhase>(null);
@@ -481,7 +496,7 @@ const DeviceCleaning: React.FC = () => {
   };
 
   const renderPrepareSteps = () => {
-    const steps = selectedMode === "descaling" ? getDescalingSteps(t) : getSterilizationSteps(t);
+    const steps = selectedMode === "descaling" ? getDescalingSteps(unitAwareT) : getSterilizationSteps(unitAwareT);
     const modeTitle = selectedMode === "descaling" ? t("cleaning.descalingModeLabel") : t("cleaning.sterilizationModeLabel");
     const modeColor = selectedMode === "descaling" ? "#F97316" : "#EF4444";
 
@@ -596,7 +611,7 @@ const DeviceCleaning: React.FC = () => {
                 <span className="text-[12px]" style={{ color: "#888888" }}>{t("cleaning.waterOutput")}</span>
               </div>
               <p className="text-[24px] font-bold" style={{ color: "#1A1A1A" }}>
-                {status.waterOutput}mL
+                {formatVolumeFromMl(status.waterOutput, unit)}
               </p>
             </div>
 
@@ -635,7 +650,7 @@ const DeviceCleaning: React.FC = () => {
             <div className="flex items-start gap-2">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "#D97706" }} />
               <p className="text-[12px] leading-relaxed" style={{ color: "#92400E" }}>
-                {t("cleaning.phase1Tip")}
+                {formatUnitText(t("cleaning.phase1Tip"))}
               </p>
             </div>
           </div>
@@ -662,8 +677,8 @@ const DeviceCleaning: React.FC = () => {
 
         <p className="mb-8 text-center text-[14px]" style={{ color: "#666666" }}>
           {runningPhase === "phase2"
-            ? t("cleaning.pausePhase2Desc")
-            : t("cleaning.pauseDesc")}
+            ? formatUnitText(t("cleaning.pausePhase2Desc"))
+            : formatUnitText(t("cleaning.pauseDesc"))}
         </p>
 
         {runningPhase === "phase2" ? (

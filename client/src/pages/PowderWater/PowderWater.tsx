@@ -6,6 +6,12 @@ import dayjs from "dayjs";
 import IPhoneFrame from "@client/src/components/IPhoneFrame";
 import { useDeviceData } from "@client/src/hooks/useDeviceData";
 import { useTranslation } from "@client/src/hooks/useTranslation";
+import {
+  mlToOz,
+  ozToMl,
+  roundVolume,
+  useVolumeUnit,
+} from "@client/src/contexts/VolumeUnitContext";
 
 const L_TO_OZ = 33.814;
 
@@ -13,10 +19,13 @@ const PowderWater: React.FC = () => {
   const navigate = useNavigate();
   const [deviceData, updateDeviceData] = useDeviceData();
   const { t } = useTranslation();
+  const { unit } = useVolumeUnit();
 
   const [powder, setPowder] = useState(deviceData.powderAmount);
   const [waterOz, setWaterOz] = useState(+(deviceData.waterAmount * L_TO_OZ).toFixed(1));
   const waterCapOz = +(deviceData.waterCapacity * L_TO_OZ).toFixed(1);
+  const displayedWater = unit === "oz" ? roundVolume(waterOz) : ozToMl(waterOz);
+  const displayedWaterCapacity = unit === "oz" ? roundVolume(waterCapOz) : ozToMl(waterCapOz);
   const [saved, setSaved] = useState(false);
 
   const powderPercent = Math.round(
@@ -139,7 +148,7 @@ const PowderWater: React.FC = () => {
 
             <div className="flex items-center justify-between">
               <span className="text-[12px]" style={{ color: "#888888" }}>
-                {waterOz.toFixed(1)} oz / {waterCapOz.toFixed(1)} oz
+                {displayedWater} {unit} / {displayedWaterCapacity} {unit}
               </span>
               <span className="text-[12px] font-medium" style={{ color: "#5B9BD5" }}>
                 {waterPercent}%
@@ -153,24 +162,27 @@ const PowderWater: React.FC = () => {
                 <input
                   type="number"
                   min={0}
-                  max={waterCapOz}
-                  step={1}
-                  value={waterOz}
+                  max={displayedWaterCapacity}
+                  step={unit === "oz" ? 1 : 10}
+                  value={displayedWater}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                     const val = Math.min(
                       Math.max(0, Number(e.target.value)),
-                      waterCapOz
+                      displayedWaterCapacity
                     );
-                    setWaterOz(val);
+                    setWaterOz(unit === "oz" ? val : mlToOz(val));
                   }}
                   className="w-full bg-transparent text-right text-[15px] font-medium outline-none"
                   style={{ color: "#1A1A1A" }}
                 />
-                <span className="ml-1 text-[13px]" style={{ color: "#888888" }}>oz</span>
+                <span className="ml-1 text-[13px]" style={{ color: "#888888" }}>{unit}</span>
               </div>
             </div>
             <p className="mt-2 text-[11px]" style={{ color: "#BBBBBB" }}>
-              {t("powderWater.waterRange", { capacity: waterCapOz.toFixed(1) })}
+              {t("powderWater.waterRange", {
+                capacity: displayedWaterCapacity,
+                unit,
+              })}
             </p>
           </div>
         </div>

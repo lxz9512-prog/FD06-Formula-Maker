@@ -5,6 +5,12 @@ import { motion } from 'framer-motion';
 import IPhoneFrame from '@client/src/components/IPhoneFrame';
 import { useTranslation } from '@client/src/hooks/useTranslation';
 import {
+  mlToOz,
+  ozToMl,
+  roundVolume,
+  useVolumeUnit,
+} from '@client/src/contexts/VolumeUnitContext';
+import {
   FormulaProfileData,
   readFormulaProfiles,
   readSelectedFormulaId,
@@ -26,7 +32,7 @@ const MANUAL_FORMULA: FormulaData = {
   brand: '',
   productLine: '',
   ageRange: '',
-  powderPerScoop: 8.8,
+  powderPerScoop: 8.7,
   waterPerScoop: 2,
 };
 
@@ -54,6 +60,7 @@ const FormulaEdit: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { t } = useTranslation();
+  const { unit } = useVolumeUnit();
   const isFirstUse = searchParams.get('source') === 'first-use';
   const isListEdit = searchParams.get('source') === 'list';
   const requestedMode = searchParams.get('mode');
@@ -99,10 +106,21 @@ const FormulaEdit: React.FC = () => {
     setData(getInitialData(mode, formulaId));
   }, [mode, formulaId]);
 
+  const powderInRange =
+    data.powderPerScoop >= 3 && data.powderPerScoop <= 45;
+  const displayedWater =
+    unit === 'oz' ? roundVolume(data.waterPerScoop) : ozToMl(data.waterPerScoop);
+  const waterInRange =
+    unit === 'oz'
+      ? displayedWater >= 1 && displayedWater <= 10
+      : displayedWater >= 10 && displayedWater <= 300;
+  const ratioOutOfRange =
+    data.waterPerScoop > 0 && data.powderPerScoop / data.waterPerScoop > 7;
   const canSave =
     data.brand.trim().length > 0 &&
-    data.powderPerScoop > 0 &&
-    data.waterPerScoop > 0;
+    powderInRange &&
+    waterInRange &&
+    !ratioOutOfRange;
 
   const handleBack = () => {
     navigate(
@@ -135,21 +153,32 @@ const FormulaEdit: React.FC = () => {
   const adjustPowder = (delta: number) => {
     setData((prev) => ({
       ...prev,
-      powderPerScoop: Math.max(
-        0.1,
-        Number((prev.powderPerScoop + delta).toFixed(1)),
+      powderPerScoop: Math.min(
+        45,
+        Math.max(3, Number((prev.powderPerScoop + delta).toFixed(1))),
       ),
     }));
   };
 
-  const adjustWater = (delta: number) => {
-    setData((prev) => ({
-      ...prev,
-      waterPerScoop: Math.min(
-        10,
-        Math.max(2, Number((prev.waterPerScoop + delta).toFixed(1))),
-      ),
-    }));
+  const adjustWater = (direction: -1 | 1) => {
+    setData((prev) => {
+      if (unit === 'oz') {
+        return {
+          ...prev,
+          waterPerScoop: Math.min(
+            10,
+            Math.max(1, Math.round(prev.waterPerScoop) + direction),
+          ),
+        };
+      }
+
+      const currentMl = ozToMl(prev.waterPerScoop);
+      const nextMl = Math.min(
+        300,
+        Math.max(10, roundVolume(currentMl + direction * 10)),
+      );
+      return { ...prev, waterPerScoop: mlToOz(nextMl) };
+    });
   };
 
   return (
@@ -179,6 +208,24 @@ const FormulaEdit: React.FC = () => {
           </div>
           <div className="h-10 w-10" />
         </div>
+
+        {ratioOutOfRange && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-4 mb-1 flex shrink-0 items-center rounded-[12px] px-3 py-2"
+            style={{
+              color: '#C23B3B',
+              background: '#FFF1F1',
+              border: '1px solid rgba(194,59,59,0.14)',
+            }}
+          >
+            <span className="mr-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[#D14343]" />
+            <span className="text-[12px] font-medium">
+              {t('demo.formulaEdit.ratioOutOfRange')}
+            </span>
+          </motion.div>
+        )}
 
         {/* Content Card */}
         <div className="flex-1 overflow-y-auto px-4 pb-28 pt-2">
@@ -334,7 +381,7 @@ const FormulaEdit: React.FC = () => {
               >
                 <motion.button
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => adjustWater(-0.5)}
+                  onClick={() => adjustWater(-1)}
                   className="flex h-8 w-8 items-center justify-center rounded-[10px]"
                   style={{
                     background: 'white',
@@ -348,11 +395,11 @@ const FormulaEdit: React.FC = () => {
                   className="text-[15px] font-medium"
                   style={{ color: '#221122' }}
                 >
-                  {data.waterPerScoop} oz
+                  {displayedWater} {unit}
                 </span>
                 <motion.button
                   whileTap={{ scale: 0.9 }}
-                  onClick={() => adjustWater(0.5)}
+                  onClick={() => adjustWater(1)}
                   className="flex h-8 w-8 items-center justify-center rounded-[10px]"
                   style={{
                     background: 'white',
@@ -379,7 +426,8 @@ const FormulaEdit: React.FC = () => {
               >
                 {t('demo.formulaEdit.mixingRatioDetail', {
                   powder: data.powderPerScoop,
-                  water: data.waterPerScoop,
+                  water: displayedWater,
+                  unit,
                 })}
               </p>
             </div>
