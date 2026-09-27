@@ -1,0 +1,20 @@
+.formula-result-overlay { position: absolute; inset: 0; z-index: 40; display: flex; align-items: flex-end; background: rgba(0, 0, 0, .5); }
+.formula-result-sheet { width: 100%; height: 54%; min-height: 430px; max-height: 92%; display: flex; flex-direction: column; align-items: center; gap: 18px; overflow-y: auto; padding: 42px 34px 34px; border-radius: 36px 36px 0 0; background: linear-gradient(155deg, #ffedb3 0%, #fbf5e4 30%, #f8f7f5 62%); color: #80451f; text-align: center; }
+.formula-result-sheet header h1 { margin: 0; font-family: inherit; font-size: 25px; line-height: 1.2; font-weight: 500; }
+.formula-result-sheet:focus { outline: none; }
+.formula-result-sheet header p { margin: 9px 0 0; font-size: 13px; line-height: 1.4; color: #a39283; }
+.formula-result-ring { position: relative; width: 154px; height: 154px; flex-shrink: 0; margin-top: 4px; display: grid; place-items: center; }
+.formula-result-ring svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.formula-result-ring > strong { font-size: 31px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.formula-result-amount { color: #b18e78; font-size: 13px; }
+.formula-result-amount p { margin: 0 0 5px; font-size: 15px; }
+.formula-result-amount strong { font-size: 20px; font-weight: 500; color: #915733; }
+.formula-result-confirm { flex-shrink: 0; width: 100%; height: 52px; margin-top: auto; border: 0; border-radius: 28px; background: #804519; color: white; font-size: 16px; font-weight: 500; cursor: pointer; box-shadow: 0 8px 26px #623b181a; }
+.formula-result-confirm:focus-visible { outline: 2px solid #804519; outline-offset: 4px; }
+.formula-result-confirm:active { transform: scale(.98); }
+.formula-logged-sheet { padding: 36px 28px 34px; }
+.formula-logged-content { width: 100%; display: flex; flex-direction: column; align-items: center; margin: auto 0; }
+.formula-logged-mascot { width: 160px; height: 160px; object-fit: contain; }
+.formula-logged-content h1 { margin: 20px 0 8px; font-family: Georgia, 'Times New Roman', serif; font-size: 48px; font-weight: 400; line-height: 1.1; letter-spacing: -1.5px; }
+.formula-logged-flourish { width: 164px; height: 26px; color: #80451f; }
+.formula-logged-content p { max-width: 320px; margin: 22px 0 0; font-size: 13px; font-weight: 500; line-height: 1.5; color: #a2979c; }

@@ -106,8 +106,8 @@ const translations: Record<string, Record<Language, string>> = {
     en: 'For accurate milk preparation, please perform water calibration.',
   },
   'maker.tubeCleanReminder': {
-    zh: '你已经调奶251杯了，为了宝宝健康，请尽快进行管路清洁',
-    en: "You've made 251 bottles. For baby's health, please clean the tubes soon.",
+    zh: '你已经调奶251杯了，为了宝宝健康，请尽快对设备进行一次水路清洁',
+    en: "You've made 251 bottles. For your baby's health, please clean the device's water lines as soon as possible.",
   },
   'maker.tubeCleanGo': { zh: '去清洁', en: 'Clean Now' },
   'maker.powderHopper': { zh: '粉仓', en: 'Powder Hopper' },
@@ -124,7 +124,7 @@ const translations: Record<string, Record<Language, string>> = {
   'maker.lastRefill': { zh: '上次补充', en: 'Last Refill' },
   'maker.waterTank': { zh: '水箱', en: 'Water Tank' },
   'maker.waterQualityTds': { zh: '水质（TDS）', en: 'Water Quality (TDS)' },
-  'maker.waterQualityExcellent': { zh: '优', en: 'Excellent' },
+  'maker.waterQualityExcellent': { zh: '优', en: 'Perfect' },
   'maker.waterQualityGood': { zh: '良', en: 'Good' },
   'maker.waterQualityPoor': { zh: '差', en: 'Poor' },
   'maker.waterStale': {
@@ -172,15 +172,7 @@ const translations: Record<string, Record<Language, string>> = {
     zh: '水温较高，注意防烫',
     en: 'High water temperature, please be careful of scalding',
   },
-  'maker.highTempChildLockWarning': {
-    zh: '水温较高，注意防烫；童锁将自动开启',
-    en: 'High temperature: avoid scalding. Child lock is now on.',
-  },
   'maker.childLock': { zh: '童锁', en: 'Child lock' },
-  'maker.childLockAutoHighTemp': {
-    zh: '55℃以上自动开启',
-    en: 'Automatically enabled above 55°C',
-  },
   'maker.nightLight': { zh: '夜灯', en: 'Night light' },
   'maker.nightLightBrightness': { zh: '亮度', en: 'Brightness' },
   'maker.feedingStats': { zh: '喂养统计', en: 'Feeding Stats' },
@@ -295,37 +287,37 @@ const translations: Record<string, Record<Language, string>> = {
 
   'cleaning.title': { zh: '管路清洁', en: 'Tube Cleaning' },
   'cleaning.dailyCleaning': { zh: '日常冲洗', en: 'Daily Rinse' },
-  'cleaning.descaling': { zh: '深度除垢模式', en: 'Deep Descaling' },
+  'cleaning.descaling': { zh: '深度除垢模式', en: 'Deep Descaling Mode' },
   'cleaning.lastCleaned': { zh: '上次清洁', en: 'Last Cleaned' },
   'cleaning.startClean': { zh: '开始清洁', en: 'Start Cleaning' },
   'cleaning.buyDescaling': {
     zh: '购买柠檬酸除垢剂',
-    en: 'Buy Descaling Agent',
+    en: 'Shop Citric Acid Descaler',
   },
-  'cleaning.sinceLastClean': { zh: '距离上次清洁后', en: 'Since Last Clean' },
-  'cleaning.bottlesMade': { zh: '已调奶{count}杯', en: '{count} Bottles Made' },
-  'cleaning.selectMode': { zh: '选择清洁模式', en: 'Select Cleaning Mode' },
+  'cleaning.sinceLastClean': { zh: '距离上次清洁后', en: 'Since the last cleaning' },
+  'cleaning.bottlesMade': { zh: '已调奶{count}杯', en: '{count} bottles prepared' },
+  'cleaning.selectMode': { zh: '选择清洁模式', en: 'Select a Cleaning Mode' },
   'cleaning.descalingDesc': {
     zh: '使用柠檬酸溶液去除管路水垢',
-    en: 'Remove scale with citric acid solution',
+    en: 'Use a citric acid solution to remove limescale from the tubing.',
   },
   'cleaning.sterilizationMode': {
     zh: '高温杀菌模式',
-    en: 'High-Temp Sterilization',
+    en: 'High-Temperature Sanitizing Mode',
   },
   'cleaning.sterilizationDesc': {
     zh: '70°C高温杀灭管路细菌',
-    en: '70°C high-temp sterilizes tubes',
+    en: 'Uses water at 70°C to kill bacteria in the tubing.',
   },
-  'cleaning.tips': { zh: '清洁建议', en: 'Cleaning Tips' },
+  'cleaning.tips': { zh: '清洁建议', en: 'Cleaning Recommendations' },
   'cleaning.tip1': {
     zh: '建议每调奶300杯之后进行一次除垢清洁',
-    en: 'Descale every 300 bottles',
+    en: 'Descale after every 300 bottles prepared.',
   },
-  'cleaning.tip2': { zh: '建议每周进行一次高温杀菌', en: 'Sterilize weekly' },
+  'cleaning.tip2': { zh: '建议每周进行一次高温杀菌', en: 'Run the high-temperature sanitizing cycle once a week.' },
   'cleaning.tip3': {
     zh: '清洁过程中请不要断开电源',
-    en: "Don't disconnect power during cleaning",
+    en: 'Keep the device connected to power throughout the cleaning cycle.',
   },
   'cleaning.descalingModeLabel': { zh: '除垢模式', en: 'Descaling Mode' },
   'cleaning.sterilizationModeLabel': {
@@ -508,6 +500,7 @@ const translations: Record<string, Record<Language, string>> = {
 
   // FAQList
   'faqList.title': { zh: '常见问题', en: 'FAQ' },
+  'faqList.mixingChamberCleaning': { zh: '如何清洗混合仓', en: 'How to Clean the Mixing Chamber' },
   'faqList.powderOutputError': {
     zh: '调奶器出粉异常',
     en: 'Powder Output Error',

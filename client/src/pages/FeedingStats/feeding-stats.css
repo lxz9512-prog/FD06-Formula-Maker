@@ -1,0 +1,44 @@
+.feeding-stats-page { position: relative; display: flex; flex-direction: column; height: 100%; min-height: 0; color: #34212d; background: white; }
+.feeding-stats-nav { display: grid; grid-template-columns: 42px 1fr 42px; align-items: center; gap: 8px; padding: 12px 16px 18px; flex-shrink: 0; }
+.feeding-stats-nav h1 { margin: 0; text-align: center; font-size: 17px; font-weight: 600; }
+.feeding-type-picker { position: relative; display: flex; align-items: center; justify-content: center; min-width: 0; z-index: 30; }
+.feeding-type-trigger { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 40px; padding: 0 8px; border: 0; border-radius: 12px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.feeding-type-trigger svg { flex-shrink: 0; transition: transform 160ms ease; }
+.feeding-type-trigger[data-state='open'] svg { transform: rotate(180deg); }
+.feeding-type-menu { width: 188px; max-width: calc(100vw - 64px); padding: 6px; border: 1px solid #eee8e3; border-radius: 16px; background: #fff; box-shadow: 0 8px 28px #48200f1c; z-index: 40; }
+.feeding-type-option { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 42px; padding: 8px 12px; border-radius: 10px; color: #583523; font-size: 14px; outline: none; cursor: pointer; }
+.feeding-type-option[data-state='checked'] { background: #f8eee3; color: #8b4a1b; font-weight: 600; }
+.feeding-type-option[data-highlighted] { background: #f7f3ef; }
+@media (prefers-reduced-motion: reduce) { .feeding-type-trigger svg { transition: none; } }
+.feeding-round-button { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 40px; height: 40px; border: 1px solid #f0eef0; border-radius: 50%; color: #34212d; background: white; }
+.feeding-round-button:disabled { opacity: 0.35; cursor: default; }
+.feeding-stats-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 16px 106px; scrollbar-width: none; }
+.feeding-stats-scroll::-webkit-scrollbar { display: none; }
+.feeding-period-controls { display: flex; align-items: center; justify-content: space-between; gap: 22px; }
+.feeding-period-controls > button { width: 37px; height: 37px; color: #a39b9f; }
+.feeding-period-tabs { display: flex; flex: 1; height: 39px; padding: 4px; border-radius: 24px; background: #f8f7f6; }
+.feeding-period-tabs button { flex: 1; border: 1px solid transparent; border-radius: 22px; background: transparent; font-size: 14px; color: #90868c; }
+.feeding-period-tabs button[aria-pressed='true'] { color: #8b4a1b; background: white; border-color: #e8e5e7; box-shadow: 0 1px 2px #34212d05; }
+.feeding-period-label { margin: 8px 0 0; text-align: center; color: #a0969b; font-size: 11px; }
+.feeding-trend { margin: 0 -16px 24px; }
+.feeding-outline-card { border: 1px solid #f0eef0; border-radius: 20px; padding: 18px; color: #583523; }
+.feeding-outline-card h2 { margin: 0; font-size: 14px; font-weight: 600; }
+.feeding-overall { padding: 14px 18px; }
+.feeding-overall-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+.feeding-overall-grid p { margin: 0 0 5px; font-size: 12px; }
+.feeding-overall-grid strong { font-size: 23px; font-weight: 400; line-height: 1.25; }
+.feeding-overall-grid small { font-size: 15px; }
+.feeding-guide-banner { display: flex; align-items: center; width: 100%; gap: 15px; min-height: 59px; margin: 16px 0; padding: 11px 16px; text-align: left; border: 1px solid #fff3d8; border-radius: 16px; color: #94591e; background: linear-gradient(100deg, #fcf0da, #f9e3aa 47%, #fff5fa); }
+.feeding-guide-banner span { flex: 1; min-width: 0; }
+.feeding-guide-banner strong { display: block; font-size: 14px; font-weight: 500; }
+.feeding-guide-banner small { display: block; margin-top: 2px; font-size: 12px; color: #a99574; }
+.feeding-guide-banner > svg { flex-shrink: 0; }
+.feeding-guide-banner > svg:last-child { color: #a79999; }
+.feeding-record { margin-top: 24px; }
+.feeding-record h3 { margin: 0 0 9px; font-size: 13px; font-weight: 600; }
+.feeding-record-line { display: flex; align-items: baseline; gap: 8px; margin-top: 6px; font-size: 13px; }
+.feeding-record-line > span:first-child { color: #a49ca2; }
+.feeding-record-line > span { flex-shrink: 0; }
+.feeding-record-line i { flex: 1; min-width: 8px; border-bottom: 2px dotted #d2cbd0; transform: translateY(-4px); }
+.feeding-add-record { position: absolute; right: 16px; bottom: 30px; z-index: 20; display: flex; align-items: center; justify-content: center; gap: 6px; height: 44px; padding: 0 16px; border-radius: 24px; color: white; background: #48200f; font-size: 15px; box-shadow: 0 8px 12px #7434aa24; }
+.feeding-stats-page button:focus-visible { outline: 2px solid #a46b3e; outline-offset: 3px; }

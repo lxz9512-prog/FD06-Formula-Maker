@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { LanguageProvider } from './i18n/LanguageContext';
 import { VolumeUnitProvider } from './contexts/VolumeUnitContext';
 
@@ -28,12 +28,11 @@ import PowderCleanDue from './pages/PowderCleanDue/PowderCleanDue';
 import NightWaterLow from './pages/NightWaterLow/NightWaterLow';
 import DeviceAssistant from './pages/DeviceAssistant/DeviceAssistant';
 import FAQList from './pages/FAQList/FAQList';
+import MixingChamberCleaning from './pages/FAQList/MixingChamberCleaning';
 import PowderOutputError from './pages/PowderOutputError/PowderOutputError';
-import WaterCalibration from './pages/WaterCalibration/WaterCalibration';
 import NotificationSettings from './pages/NotificationSettings/NotificationSettings';
 import CleaningIncomplete from './pages/CleaningIncomplete/CleaningIncomplete';
 import TubeCleanReminder from './pages/TubeCleanReminder/TubeCleanReminder';
-import WaterCalibrationReminder from './pages/WaterCalibrationReminder/WaterCalibrationReminder';
 
 const RoutesComponent = () => {
   return (
@@ -81,6 +80,7 @@ const RoutesComponent = () => {
           <Route path="formula-result1" element={<FormulaResult1 />} />
           <Route path="water-low-error" element={<WaterLowError />} />
           <Route path="powder-error" element={<PowderError />} />
+          <Route path="water-quality-error" element={<BabyFormulaMaker waterQualityError />} />
           <Route
             path="powder-clean-reminder"
             element={<PowderCleanReminder />}
@@ -90,18 +90,19 @@ const RoutesComponent = () => {
           <Route path="cleaning-incomplete" element={<CleaningIncomplete />} />
           <Route path="device-assistant" element={<DeviceAssistant />} />
           <Route path="faq" element={<FAQList />} />
+          <Route path="faq/mixing-chamber-cleaning" element={<MixingChamberCleaning />} />
           <Route
             path="faq/powder-output-error"
             element={<PowderOutputError />}
           />
-          <Route path="water-calibration" element={<WaterCalibration />} />
+          <Route path="water-calibration" element={<Navigate to="/device-settings" replace />} />
           <Route
             path="notification-settings"
             element={<NotificationSettings />}
           />
           <Route
             path="water-calibration-reminder"
-            element={<WaterCalibrationReminder />}
+            element={<Navigate to="/device" replace />}
           />
           <Route path="tube-clean-reminder" element={<TubeCleanReminder />} />
         </Route>

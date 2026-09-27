@@ -1,8 +1,9 @@
+import { PageBackIcon } from '@/components/PageNavigation';
 import React from "react";
 import { useTranslation } from "@client/src/hooks/useTranslation";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, BookOpen, Heart, AlertCircle } from "lucide-react";
+import { BookOpen, Heart, AlertCircle } from "lucide-react";
 import IPhoneFrame from "@client/src/components/IPhoneFrame";
 import {
   ML_PER_OZ,
@@ -139,14 +140,14 @@ const FeedingGuide: React.FC = () => {
   return (
     <IPhoneFrame background="linear-gradient(to bottom, hsl(39, 50%, 95%), hsl(39, 30%, 97%))">
       <div className="flex h-full flex-col">
-        <div className="flex items-center px-5 pt-6 pb-2">
+        <div className="fd06-page-nav">
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={handleBack}
-            className="flex h-[36px] w-[36px] items-center justify-center rounded-full bg-white"
-            style={{ boxShadow: "0px 2px 6px rgba(0,0,0,0.06)" }}
+            className="fd06-page-back"
+             aria-label={t('common.back')}
           >
-            <ArrowLeft className="h-4 w-4" style={{ color: "#221122" }} />
+            <PageBackIcon />
           </motion.button>
           <h1
             className="ml-3 text-[18px] font-semibold"

@@ -1,8 +1,10 @@
+import { PageBackIcon } from '@/components/PageNavigation';
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import './device-cleaning.css';
+import descalingDevice from '@/assets/fd06-descaling-side.png';
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  ArrowLeft,
   Droplets,
   Thermometer,
 
@@ -15,6 +17,7 @@ import {
   Beaker,
   Sparkles,
   ExternalLink,
+  Headset,
 } from "lucide-react";
 import IPhoneFrame from "@client/src/components/IPhoneFrame";
 import { UniversalLink } from '@lark-apaas/client-toolkit/components/UniversalLink';
@@ -82,7 +85,7 @@ const getSterilizationSteps = (t: (key: string, params?: Record<string, string |
 
 const DeviceCleaning: React.FC = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { unit } = useVolumeUnit();
   const formatUnitText = (value: string) => {
     if (unit === "ml") return value;
@@ -96,7 +99,14 @@ const DeviceCleaning: React.FC = () => {
   ) => formatUnitText(t(key, params));
   const [selectedMode, setSelectedMode] = useState<CleaningMode | null>(null);
   const [currentStep, setCurrentStep] = useState<CleaningStep>("select");
+  const [prepareStep, setPrepareStep] = useState<1 | 2>(1);
+  const [phase2PrepareStep, setPhase2PrepareStep] = useState<1 | 2>(1);
+  const isDescalingPrepare = currentStep === 'prepare' && selectedMode === 'descaling';
   const [runningPhase, setRunningPhase] = useState<RunningPhase>(null);
+  const isDescalingRunning = currentStep === 'running' && selectedMode === 'descaling';
+  const isDescalingComplete = currentStep === 'complete' && selectedMode === 'descaling';
+  const isDescalingPhase2Prepare = currentStep === 'pause' && selectedMode === 'descaling' && runningPhase === 'phase2';
+  const [descalingProgress, setDescalingProgress] = useState(0);
   const [status, setStatus] = useState<CleaningStatus>({
     temperature: 26,
     waterOutput: 0,
@@ -119,71 +129,30 @@ const DeviceCleaning: React.FC = () => {
   };
 
   const simulateDescalingPhase1 = useCallback(() => {
-    let cycle = 0;
-    let subStep = 0;
-    let temp = 26;
-    let waterOut = 0;
-
+    clearCleaningTimer();
+    setDescalingProgress(0);
+    const startedAt = performance.now();
+    // Five-second demo, followed by a two-second completion checkmark.
     timerRef.current = setInterval(() => {
-      setStatus((prev) => {
-        let newTemp = prev.temperature;
-        let newWater = prev.waterOutput;
-        let newFan = prev.fanRunning;
-        let newCycle = prev.currentCycle;
-        let remaining = prev.remainingTime;
-        let statusText = "";
-
-        if (subStep === 0) {
-          newTemp = Math.min(50, prev.temperature + 2);
-          newFan = false;
-          if (newTemp >= 50) {
-            subStep = 1;
-          }
-        } else if (subStep === 1) {
-          newWater = prev.waterOutput + 30;
-          newFan = true;
-          subStep = 2;
-          remaining = 180;
-        } else if (subStep === 2) {
-          remaining = Math.max(0, prev.remainingTime - 60);
-          newFan = true;
-          if (remaining <= 0) {
-            cycle++;
-            if (cycle < 5) {
-              subStep = 1;
-              newCycle = cycle;
-            } else {
-              subStep = 3;
-              newCycle = 5;
-            }
-          }
-        } else if (subStep === 3) {
-          newWater = prev.waterOutput + 200;
-          newFan = true;
-          clearCleaningTimer();
-          setRunningPhase("phase2");
-          setCurrentStep("pause");
-          return {
-            ...prev,
-            temperature: 50,
-            waterOutput: newWater,
-            fanRunning: false,
-            currentCycle: 5,
-            remainingTime: 0,
-            powerFlashing: true,
-          };
-        }
-
-        return {
-          ...prev,
-          temperature: newTemp,
-          waterOutput: newWater,
-          fanRunning: newFan,
-          currentCycle: newCycle,
-          remainingTime: remaining,
-        };
-      });
-    }, 100);
+      const elapsed = performance.now() - startedAt;
+      const progress = Math.min(100, Math.floor(elapsed / 50));
+      setDescalingProgress(progress);
+      setStatus((prev) => ({
+        ...prev,
+        temperature: Math.min(50, 26 + progress * 0.8),
+        waterOutput: progress === 100 ? 350 : Math.floor(progress / 20) * 30,
+        fanRunning: progress > 0 && progress < 100,
+        currentCycle: Math.floor(progress / 20),
+        remainingTime: 0,
+        powerFlashing: progress === 100,
+      }));
+      if (elapsed >= 7000) {
+        clearCleaningTimer();
+        setPhase2PrepareStep(1);
+        setRunningPhase('phase2');
+        setCurrentStep('pause');
+      }
+    }, 50);
   }, []);
 
   useEffect(() => {
@@ -205,43 +174,28 @@ const DeviceCleaning: React.FC = () => {
   }, [location.state, simulateDescalingPhase1]);
 
   const simulateDescalingPhase2 = useCallback(() => {
-    let subStep = 0;
-    let targetTemp = 45;
-
+    clearCleaningTimer();
+    setDescalingProgress(0);
+    const startedAt = performance.now();
     timerRef.current = setInterval(() => {
-      setStatus((prev) => {
-        let newTemp = prev.temperature;
-        let newWater = prev.waterOutput;
-        let newFan = prev.fanRunning;
-
-        if (subStep === 0) {
-          newTemp = Math.min(targetTemp, prev.temperature + 3);
-          newFan = false;
-          if (newTemp >= targetTemp) {
-            subStep = 1;
-          }
-        } else if (subStep === 1) {
-          newWater = prev.waterOutput + 350;
-          newFan = true;
-          clearCleaningTimer();
-          setCurrentStep("complete");
-          return {
-            ...prev,
-            temperature: targetTemp,
-            waterOutput: newWater,
-            fanRunning: false,
-            powerFlashing: false,
-          };
-        }
-
-        return {
-          ...prev,
-          temperature: newTemp,
-          waterOutput: newWater,
-          fanRunning: newFan,
-        };
-      });
-    }, 100);
+      const elapsed = performance.now() - startedAt;
+      const progress = Math.min(100, Math.floor(elapsed / 50));
+      setDescalingProgress(progress);
+      setStatus((prev) => ({
+        ...prev,
+        temperature: Math.min(45, 26 + progress * 0.38),
+        waterOutput: 350 + Math.round(350 * progress / 100),
+        currentCycle: Math.floor(progress / 20),
+        fanRunning: progress > 0 && progress < 100,
+        remainingTime: 0,
+        powerFlashing: false,
+      }));
+      // Keep stage 2 complete until the user chooses to return to settings.
+      if (progress === 100) {
+        clearCleaningTimer();
+        setCurrentStep('complete');
+      }
+    }, 50);
   }, []);
 
   const simulateSterilization = useCallback(() => {
@@ -338,6 +292,7 @@ const DeviceCleaning: React.FC = () => {
     setStatus((prev) => ({
       ...prev,
       temperature: 26,
+      currentCycle: 0,
       powerFlashing: false,
     }));
     setCurrentStep("running");
@@ -350,6 +305,8 @@ const DeviceCleaning: React.FC = () => {
       setTubeStatus(0);
     }
     setCurrentStep("select");
+    setPrepareStep(1);
+    setPhase2PrepareStep(1);
     setSelectedMode(null);
     setRunningPhase(null);
     setStatus({
@@ -392,107 +349,83 @@ const DeviceCleaning: React.FC = () => {
   };
 
   const renderModeSelect = () => {
-    const tubeInfo = getTubeStatusInfo(tubeStatus);
     return (
-    <div className="flex flex-1 flex-col px-5 pt-4">
-      <div
-        className="mb-4 flex items-center justify-between rounded-[14px] p-4"
-        style={{ backgroundColor: tubeInfo.bg, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
-      >
-        <div>
-          <p className="text-[12px]" style={{ color: "#888888" }}>{t("cleaning.sinceLastClean")}</p>
-          <p className="mt-1 text-[20px] font-bold leading-none" style={{ color: tubeInfo.color }}>
-            {t("cleaning.bottlesMade", { count: tubeStatus })}
-          </p>
+    <main className="tube-cleaning-content">
+      <section>
+        <h2 className="tube-section-title">{t('cleaning.currentStatus')}</h2>
+        <div className="tube-status-card">
+          <span>{t('cleaning.sinceLastClean')}</span>
+          <strong>{t('cleaning.bottlesMade', { count: tubeStatus })}</strong>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <span
-            className="rounded-full px-3 py-1 text-[13px] font-semibold text-white"
-            style={{ backgroundColor: tubeInfo.color }}
-          >
-            {tubeInfo.label}
-          </span>
-
-        </div>
-      </div>
-      <h2 className="mb-4 text-[18px] font-semibold" style={{ color: "#1A1A1A" }}>
-        {t("cleaning.selectMode")}
-      </h2>
-      <div className="space-y-3">
+      </section>
+      <section className="tube-modes">
+        <h2 className="tube-section-title">{t('cleaning.selectMode')}</h2>
+        <div className="tube-mode-card">
         <motion.button
           whileTap={{ scale: 0.98 }}
           onClick={() => {
             setSelectedMode("descaling");
+            setPrepareStep(1);
             setCurrentStep("prepare");
           }}
-          className="flex w-full items-center gap-4 rounded-[16px] bg-white p-4"
-          style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}
+          className="tube-mode-button"
         >
-          <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px]"
-            style={{ background: "#FFF7ED" }}
-          >
-            <Beaker className="h-6 w-6" style={{ color: "#F97316" }} />
-          </div>
-          <div className="flex-1 text-left">
-            <p className="text-[15px] font-semibold" style={{ color: "#1A1A1A" }}>
-              {t("cleaning.descaling")}
-            </p>
-            <p className="mt-0.5 text-[12px]" style={{ color: "#888888" }}>
-              {t("cleaning.descalingDesc")}
-            </p>
-          </div>
-          <ChevronRight className="h-5 w-5" style={{ color: "#CCCCCC" }} />
+          <span className="tube-mode-copy">
+            <span className="tube-mode-title"><Droplets size={20} strokeWidth={1.6} />{t('cleaning.descaling')}</span>
+            <span className="tube-mode-description">{t('cleaning.descalingDesc')}</span>
+          </span>
+          <ChevronRight className="tube-mode-chevron" size={21} strokeWidth={1.6} />
         </motion.button>
-
+        <UniversalLink to="https://www.momcozy.com" target="_blank" rel="noopener noreferrer" className="tube-purchase-link">
+          <ExternalLink size={15} />{t('cleaning.buyDescaling')}
+        </UniversalLink>
+        </div>
+        <div className="tube-mode-card">
         <motion.button
           whileTap={{ scale: 0.98 }}
           onClick={() => {
             setSelectedMode("sterilization");
             setCurrentStep("prepare");
           }}
-          className="flex w-full items-center gap-4 rounded-[16px] bg-white p-4"
-          style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}
+          className="tube-mode-button"
         >
-          <div
-            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px]"
-            style={{ background: "#FEF2F2" }}
-          >
-            <Sparkles className="h-6 w-6" style={{ color: "#EF4444" }} />
-          </div>
-          <div className="flex-1 text-left">
-            <p className="text-[15px] font-semibold" style={{ color: "#1A1A1A" }}>
-              {t("cleaning.sterilizationMode")}
-            </p>
-            <p className="mt-0.5 text-[12px]" style={{ color: "#888888" }}>
-              {t("cleaning.sterilizationDesc")}
-            </p>
-          </div>
-          <ChevronRight className="h-5 w-5" style={{ color: "#CCCCCC" }} />
+          <span className="tube-mode-copy">
+            <span className="tube-mode-title"><Thermometer size={20} strokeWidth={1.6} />{t('cleaning.sterilizationMode')}</span>
+            <span className="tube-mode-description">{t('cleaning.sterilizationDesc')}</span>
+          </span>
+          <ChevronRight className="tube-mode-chevron" size={21} strokeWidth={1.6} />
         </motion.button>
-      </div>
-
-      <div className="mt-6 rounded-[12px] bg-white/60 p-4">
-        <p className="mb-2 text-[13px] font-medium" style={{ color: "#1A1A1A" }}>
-          {t("cleaning.tips")}
-        </p>
-        <ul className="space-y-2 text-[12px]" style={{ color: "#666666" }}>
-          <li className="flex items-start gap-2">
-            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-orange-400" />
-            <span>{t("cleaning.tip1")}</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-red-400" />
-            <span>{t("cleaning.tip2")}</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-blue-400" />
-            <span>{t("cleaning.tip3")}</span>
-          </li>
-        </ul>
-      </div>
-    </div>
+        </div>
+      </section>
+      <section className="tube-recommendations">
+        <h2 className="tube-section-title">{t('cleaning.tips')}</h2>
+        <ol><li>{t('cleaning.tip1')}</li><li>{t('cleaning.tip2')}</li><li>{t('cleaning.tip3')}</li></ol>
+      </section>
+    </main>
     );
+  };
+
+  const renderDescalingPrepare = () => {
+      const first = prepareStep === 1;
+      return (
+        <main className="descaling-prepare">
+          <div className="descaling-prepare-copy">
+            <p className="descaling-step-label">{language === 'zh' ? `步骤 ${prepareStep}` : `Step ${prepareStep}`}</p>
+            <h2>{language === 'zh' ? (first ? '准备除垢溶液' : '放置接水容器') : (first ? 'Prepare the descaling solution' : 'Place the collection container')}</h2>
+            <div className="descaling-step-track" aria-label={language === 'zh' ? `第 ${prepareStep} 步，共 2 步` : `Step ${prepareStep} of 2`}>
+              <span className={first ? 'active' : ''} /><span className={!first ? 'active' : ''} />
+            </div>
+            <p className="descaling-step-description">{unitAwareT(first ? 'cleaning.stepDescaling1Desc' : 'cleaning.stepPlaceContainerDesc')}</p>
+          </div>
+          <div className="descaling-device-illustration"><img src={descalingDevice} alt={language === 'zh' ? '调奶器侧面示意图' : 'Formula maker side view'} /></div>
+          <div className="descaling-prepare-footer">
+            <motion.button whileTap={{ scale: 0.98 }} onClick={() => first ? setPrepareStep(2) : handleStartCleaning()}>
+              {!first && <Play size={21} fill="currentColor" />}
+              {first ? (language === 'zh' ? '继续' : 'Continue') : t('cleaning.startClean')}
+            </motion.button>
+          </div>
+        </main>
+      );
   };
 
   const renderPrepareSteps = () => {
@@ -560,6 +493,53 @@ const DeviceCleaning: React.FC = () => {
               {t("cleaning.startClean")}
             </span>
         </motion.button>
+      </div>
+    );
+  };
+
+  const renderDescalingRunning = () => {
+    const progress = descalingProgress;
+    const finished = progress === 100;
+    const stage = runningPhase === 'phase2' ? 2 : 1;
+
+    return (
+      <div className="descaling-running">
+        <div className="descaling-progress" role="progressbar" aria-label={language === 'zh' ? '清洁进度' : 'Cleaning progress'} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} aria-valuetext={finished ? (language === 'zh' ? `阶段 ${stage} 清洁完成` : `Stage ${stage} cleaning complete`) : `${progress}%`}>
+          <svg viewBox="0 0 250 250" aria-hidden="true">
+            <defs>
+              <linearGradient id="descaling-progress-fill" x1="0" y1="0" x2="0.3" y2="1">
+                <stop offset="0%" stopColor="#FFE17D" />
+                <stop offset="100%" stopColor="#FFFCF2" />
+              </linearGradient>
+              <linearGradient id="descaling-check-fill" x1="0" y1="1" x2="1" y2="0">
+                <stop offset="0%" stopColor="#CF9D43" />
+                <stop offset="55%" stopColor="#91511E" />
+                <stop offset="100%" stopColor="#B78032" />
+              </linearGradient>
+            </defs>
+            <circle cx="125" cy="125" r="109" fill="url(#descaling-progress-fill)" />
+            {finished ? (
+              <path d="M106 131 Q112 133 116 140 Q133 114 144 110" fill="none" stroke="url(#descaling-check-fill)" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+            ) : (
+              <>
+                <circle cx="125" cy="125" r="119" fill="none" stroke="#F2CE55" strokeWidth="2" strokeLinecap="round" strokeDasharray="1 10" />
+                <circle cx="125" cy="125" r="119" fill="none" stroke="#F2CE55" strokeWidth="4" strokeLinecap="round" pathLength="100" strokeDasharray={`${progress} 100`} transform="rotate(-90 125 125)" opacity={progress > 0 ? 1 : 0} />
+              </>
+            )}
+          </svg>
+          {!finished && <span>{progress}%</span>}
+        </div>
+        <h2>{language === 'zh' ? (finished ? '清洁完成' : '清洁中') : 'Cleaning'}</h2>
+        {!finished && <p className="descaling-running-temperature">{language === 'zh' ? '温度' : 'Temp'}: {Math.round(status.temperature)} °C</p>}
+        {isDescalingComplete ? (
+          <p role="status">{language === 'zh' ? '清洁已完成，可以继续调奶。' : 'Cleaning is complete. You can now prepare formula.'}</p>
+        ) : finished && stage === 1 ? (
+          <p role="status">{language === 'zh' ? '第一阶段清洁完成，即将自动跳转下一步' : 'Stage 1 cleaning is complete. The next step will start automatically.'}</p>
+        ) : <p>{language === 'zh'
+          ? `${stage === 1 ? '共进行五轮清洁，' : ''}预计需要 5 分钟，请耐心等待。`
+          : stage === 1
+            ? 'Five cleaning cycles take about 5 minutes. Please wait while cleaning is in progress.'
+            : 'Cleaning takes about 5 minutes. Please wait while cleaning is in progress.'}</p>}
       </div>
     );
   };
@@ -660,6 +640,30 @@ const DeviceCleaning: React.FC = () => {
   };
 
   const renderPauseScreen = () => {
+    if (isDescalingPhase2Prepare) {
+      const first = phase2PrepareStep === 1;
+      return (
+        <main className="descaling-prepare">
+          <div className="descaling-prepare-copy">
+            <p className="descaling-step-label">{language === 'zh' ? `步骤 ${phase2PrepareStep}` : `Step ${phase2PrepareStep}`}</p>
+            <h2>{language === 'zh' ? (first ? '清洗水箱并加水' : '放置接水容器') : (first ? 'Clean and refill the water tank' : 'Place the collection container')}</h2>
+            <div className="descaling-step-track" aria-label={language === 'zh' ? `第 ${phase2PrepareStep} 步，共 2 步` : `Step ${phase2PrepareStep} of 2`}>
+              <span className={first ? 'active' : ''} /><span className={!first ? 'active' : ''} />
+            </div>
+            <p className="descaling-step-description">{first
+              ? formatUnitText(language === 'zh' ? '请清洗水箱，并重新加入不少于600mL的干净清水。' : 'Clean the water tank, then refill it with at least 600mL of fresh water.')
+              : formatUnitText(language === 'zh' ? '请在接水盘处放置容量大于400mL的接水容器。' : 'Place a container on the drip tray. It must hold more than 400mL.')}</p>
+          </div>
+          <div className="descaling-device-illustration"><img src={descalingDevice} alt={language === 'zh' ? '调奶器侧面示意图' : 'Formula maker side view'} /></div>
+          <div className="descaling-prepare-footer">
+            <motion.button whileTap={{ scale: 0.98 }} onClick={() => first ? setPhase2PrepareStep(2) : handleContinuePhase2()}>
+              {!first && <Play size={21} fill="currentColor" />}
+              {first ? (language === 'zh' ? '继续' : 'Continue') : (language === 'zh' ? '开始清洁' : 'Start Cleaning')}
+            </motion.button>
+          </div>
+        </main>
+      );
+    }
     const modeColor = selectedMode === "descaling" ? "#F97316" : "#EF4444";
 
     return (
@@ -715,6 +719,14 @@ const DeviceCleaning: React.FC = () => {
   };
 
   const renderCompleteScreen = () => {
+    if (isDescalingComplete) {
+      return <>
+        {renderDescalingRunning()}
+        <div className="descaling-prepare-footer">
+          <button type="button" onClick={() => navigate('/device-settings')}>{t('cleaning.backToSettings')}</button>
+        </div>
+      </>;
+    }
     const modeColor = selectedMode === "descaling" ? "#F97316" : "#EF4444";
 
     return (
@@ -754,34 +766,45 @@ const DeviceCleaning: React.FC = () => {
   };
 
   return (
-    <IPhoneFrame background="#F7F7F7">
-      <div className="flex h-full flex-col">
-        <div className="flex items-center justify-between px-4 pt-6 pb-3">
-              {currentStep !== "running" ? (
+    <IPhoneFrame background={isDescalingPrepare || isDescalingRunning || isDescalingPhase2Prepare || isDescalingComplete ? '#F9F7F6' : currentStep === 'select' ? '#F8F7F5' : '#F7F7F7'}>
+      <div className={`flex h-full flex-col ${currentStep === 'select' ? 'tube-cleaning-page' : ''}`}>
+        <div className="fd06-page-nav">
+              {currentStep !== "running" && !isDescalingComplete ? (
                 <motion.button
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => navigate(-1)}
-                  className="flex h-8 w-8 items-center justify-center"
+                  onClick={() => {
+                    if (isDescalingPhase2Prepare) {
+                      if (phase2PrepareStep === 2) setPhase2PrepareStep(1);
+                      else handleReset();
+                    } else if (currentStep === "prepare") {
+                      if (isDescalingPrepare && prepareStep === 2) setPrepareStep(1);
+                      else handleReset();
+                    } else {
+                      navigate(-1);
+                    }
+                  }}
+                  aria-label={t('common.back')}
+                  className="fd06-page-back"
                 >
-                  <ArrowLeft className="h-6 w-6" style={{ color: "#1A1A1A" }} />
+                  <PageBackIcon />
                 </motion.button>
               ) : (
                 <div className="h-8 w-8" />
               )}
           <h1 className="text-[16px] font-semibold" style={{ color: "#1A1A1A" }}>
-            {t("cleaning.title")}
+            {isDescalingComplete || isDescalingPhase2Prepare || (isDescalingRunning && runningPhase === 'phase2') ? (language === 'zh' ? '阶段 2' : 'Stage 2') : isDescalingRunning ? (language === 'zh' ? '阶段 1' : 'Stage 1') : isDescalingPrepare ? (language === 'zh' ? '阶段 1/2' : 'Stage 1/2') : t("cleaning.title")}
           </h1>
-          <div className="h-8 w-8" />
+          {currentStep === 'select' || isDescalingPrepare || isDescalingRunning || isDescalingPhase2Prepare || isDescalingComplete ? <button type="button" className="fd06-page-back" aria-label={t('deviceAssistant.title')} onClick={() => navigate('/device-assistant')}><Headset size={23} strokeWidth={1.6} /></button> : <div className="h-8 w-8" />}
         </div>
 
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" initial={false}>
           {currentStep === "select" && (
             <motion.div
               key="select"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-1 flex-col"
+              className="tube-cleaning-scroll"
             >
               {renderModeSelect()}
             </motion.div>
@@ -793,9 +816,9 @@ const DeviceCleaning: React.FC = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="flex flex-1 flex-col"
+              className="flex min-h-0 flex-1 flex-col"
             >
-              {renderPrepareSteps()}
+              {isDescalingPrepare ? renderDescalingPrepare() : renderPrepareSteps()}
             </motion.div>
           )}
 
@@ -807,7 +830,7 @@ const DeviceCleaning: React.FC = () => {
               exit={{ opacity: 0 }}
               className="flex flex-1 flex-col"
             >
-              {renderRunningStatus()}
+              {isDescalingRunning ? renderDescalingRunning() : renderRunningStatus()}
             </motion.div>
           )}
 
@@ -817,7 +840,7 @@ const DeviceCleaning: React.FC = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-1 flex-col"
+              className="flex min-h-0 flex-1 flex-col"
             >
               {renderPauseScreen()}
             </motion.div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -17,12 +17,19 @@ import {
   AlertTriangle,
   X,
   FlaskConical,
+  NotebookTabs,
+  Shield,
+  SlidersHorizontal,
+  Thermometer,
+  Baby,
 } from 'lucide-react';
+import './control-page.css';
+import { getResourceWarnings, getResourceAlarms, isResourceBlocked } from './resource-warnings';
 import IPhoneFrame from '@client/src/components/IPhoneFrame';
 import { useDeviceData } from '@client/src/hooks/useDeviceData';
 import { useTranslation } from '@client/src/hooks/useTranslation';
 import { Image } from '@client/src/components/ui/image';
-import deviceImage from '@/assets/fd06-device.png';
+import deviceImage from '@/assets/fd06-control-device.png';
 import {
   formatVolumeFromMl,
   formatVolumeFromOz,
@@ -33,6 +40,11 @@ import {
 } from '@client/src/contexts/VolumeUnitContext';
 
 const DEVICE_IMAGE_URL = deviceImage;
+// Keep the original detailed resource panels available for future restoration.
+const SHOW_LEGACY_WATER_DETAILS = false;
+const SHOW_LEGACY_FORMULA_DETAILS = false;
+const SHOW_LEGACY_QUALITY_DETAILS = false;
+const SHOW_LEGACY_CHAMBER_DETAILS = false;
 
 const NEUMORPHIC_SHADOW =
   '6px 6px 12px hsl(330 10% 85% / 0.25), -6px -6px 12px hsl(0 0% 100% / 0.8)';
@@ -52,12 +64,12 @@ const getWaterQualityLevel = (tds: number): WaterQualityLevel => {
 };
 
 const WATER_TEMP_OPTIONS = [
-  { fahrenheit: 80, celsius: 26 },
-  { fahrenheit: 100, celsius: 37 },
-  { fahrenheit: 104, celsius: 40 },
-  { fahrenheit: 113, celsius: 45 },
-  { fahrenheit: 122, celsius: 50 },
-  { fahrenheit: 158, celsius: 70 },
+  { mode: 'room', fahrenheit: null, celsius: null },
+  { mode: 'heated', fahrenheit: 100, celsius: 37 },
+  { mode: 'heated', fahrenheit: 104, celsius: 40 },
+  { mode: 'heated', fahrenheit: 113, celsius: 45 },
+  { mode: 'heated', fahrenheit: 122, celsius: 50 },
+  { mode: 'heated', fahrenheit: 158, celsius: 70 },
 ] as const;
 const WATER_CONFIG: Record<
   Mode,
@@ -102,12 +114,14 @@ const readFormulaProfile = (): FormulaProfile => {
 
 interface StepperButtonProps {
   icon: React.ReactNode;
+  label: string;
   disabled: boolean;
   onClick: () => void;
 }
 
 const StepperButton2: React.FC<StepperButtonProps> = ({
   icon,
+  label,
   disabled,
   onClick,
 }) => (
@@ -115,6 +129,7 @@ const StepperButton2: React.FC<StepperButtonProps> = ({
     whileTap={disabled ? {} : { scale: 0.9 }}
     onClick={onClick}
     disabled={disabled}
+    aria-label={label}
     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all duration-150 disabled:opacity-50"
     style={{
       background: 'transparent',
@@ -128,6 +143,8 @@ const StepperButton2: React.FC<StepperButtonProps> = ({
 interface BabyFormulaMakerProps {
   waterLow?: boolean;
   powderError?: boolean;
+  waterQualityError?: boolean;
+  completionOverlay?: React.ReactNode;
   powderCleanReminder?: boolean;
   powderCleanDue?: boolean;
   nightWaterLow?: boolean;
@@ -141,6 +158,8 @@ interface BabyFormulaMakerProps {
 const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
   waterLow,
   powderError,
+  waterQualityError,
+  completionOverlay,
   powderCleanReminder,
   nightWaterLow,
   powderCleanDue,
@@ -152,18 +171,23 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
 }) => {
   const [waterLowDismissed, setWaterLowDismissed] = useState(false);
   const [powderErrorDismissed, setPowderErrorDismissed] = useState(false);
+  const [dismissedChamberCount, setDismissedChamberCount] =
+    useState<number | null>(null);
   const [waterCalibrationDismissed, setWaterCalibrationDismissed] =
     useState(false);
   const [tubeCleanDismissed, setTubeCleanDismissed] = useState(false);
   const showWaterCalibrationReminder =
-    waterCalibrationReminderProp && !waterCalibrationDismissed;
+    false && waterCalibrationReminderProp && !waterCalibrationDismissed; // FD06 no longer supports water calibration; retain legacy UI only.
   const showTubeCleanReminder = tubeCleanReminderProp && !tubeCleanDismissed;
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { unit } = useVolumeUnit();
-  const [mixingChamberCount, setMixingChamberCount] = useState<number>(() => {
+  const [storedMixingChamberCount, setMixingChamberCount] = useState<number>(() => {
     const stored = localStorage.getItem('mixing_chamber_count');
     return stored ? parseInt(stored, 10) : 0;
   });
+  // Exception pages preview matching readings without overwriting device storage.
+  const mixingChamberCount = powderCleanDue ? Math.max(8, storedMixingChamberCount)
+    : powderCleanReminder ? 6 : storedMixingChamberCount;
   const mixingChamberBlocked = mixingChamberCount >= 8;
   const waterLowActive =
     waterLow && !(waterLowDismissable && waterLowDismissed);
@@ -181,11 +205,6 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
   const showFormulaControls = !isPrimaryControlPage || hasFormulaProfile;
   const formulaSetupRequired =
     isPrimaryControlPage && mode === 'milk' && !hasFormulaProfile;
-  const isBlocked =
-    waterLowActive ||
-    powderErrorActive ||
-    powderCleanDue ||
-    formulaSetupRequired;
   const [waterAmount, setWaterAmount] = useState(
     WATER_CONFIG['milk'].defaultAmount,
   );
@@ -223,15 +242,97 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
   const [showFormulaToast, setShowFormulaToast] = useState(false);
   const [progress, setProgress] = useState(0);
   const [resourcePopup, setResourcePopup] = useState<ResourcePopup>(null);
+  const resourceHeroRef = useRef<HTMLDivElement>(null);
+  const [resourceTrigger, setResourceTrigger] = useState<HTMLButtonElement | null>(null);
+  const showSimpleWaterTip = !SHOW_LEGACY_WATER_DETAILS && resourcePopup === 'water' && resourceTrigger?.dataset.resource === 'water';
+  const showSimpleFormulaTip = !SHOW_LEGACY_FORMULA_DETAILS && resourcePopup === 'formula';
+  const showSimpleQualityTip = !SHOW_LEGACY_QUALITY_DETAILS && resourcePopup === 'water' && resourceTrigger?.dataset.resource === 'quality';
+  const showSimpleChamberTip = !SHOW_LEGACY_CHAMBER_DETAILS && resourcePopup === 'powder';
+  const showSimpleResourceTip = showSimpleWaterTip || showSimpleFormulaTip || showSimpleQualityTip || showSimpleChamberTip;
+  const [resourcePosition, setResourcePosition] = useState({ left: 0, bottom: 0, width: 218, arrow: 24 });
+  const toggleResourcePopup = (kind: Exclude<ResourcePopup, null>, trigger: HTMLButtonElement) => {
+    setResourcePopup(resourcePopup === kind && resourceTrigger === trigger ? null : kind);
+    setResourceTrigger(trigger);
+  };
+
+  useLayoutEffect(() => {
+    const hero = resourceHeroRef.current;
+    if (!resourcePopup || !resourceTrigger || !hero) return;
+    const reposition = () => {
+      const bounds = hero.getBoundingClientRect();
+      const trigger = resourceTrigger.getBoundingClientRect();
+      if (!bounds.width || !bounds.height) return;
+      // The phone preview can be scaled; convert viewport coordinates to local CSS pixels.
+      const scaleX = bounds.width / hero.offsetWidth;
+      const scaleY = bounds.height / hero.offsetHeight;
+      const center = (trigger.left + trigger.width / 2 - bounds.left) / scaleX;
+      const width = Math.min(showSimpleResourceTip ? 288 : resourcePopup === 'powder' ? 174 : resourcePopup === 'formula' ? 214 : 218, hero.offsetWidth);
+      const left = Math.max(0, Math.min(center - width / 2, hero.offsetWidth - width));
+      setResourcePosition({
+        left,
+        width,
+        bottom: (bounds.bottom - trigger.top) / scaleY + 10,
+        arrow: Math.max(12, Math.min(center - left, width - 12)),
+      });
+    };
+    reposition();
+    const observer = new ResizeObserver(reposition);
+    observer.observe(hero);
+    observer.observe(resourceTrigger);
+    window.addEventListener('resize', reposition);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', reposition);
+    };
+  }, [resourcePopup, resourceTrigger, language, unit, showSimpleResourceTip]);
   const [showCompleteToast, setShowCompleteToast] = useState(false);
   const [lastFeeding, setLastFeeding] = useState<{
     oz: number;
     time: string;
   } | null>(null);
-  const [deviceData, updateDeviceData] = useDeviceData();
+  const [storedDeviceData, updateDeviceData] = useDeviceData();
+  const deviceData = {
+    ...storedDeviceData,
+    waterAmount: waterLow ? 0 : storedDeviceData.waterAmount,
+    powderAmount: powderError ? 0 : storedDeviceData.powderAmount,
+    waterTds: waterQualityError ? 100 : storedDeviceData.waterTds,
+  };
+  const feedingHistory = (() => {
+    try {
+      const value: unknown = JSON.parse(localStorage.getItem('feeding_history') || '[]');
+      return Array.isArray(value)
+        ? value.filter((entry): entry is { ml: number; time: string } =>
+            typeof entry?.ml === 'number' && typeof entry?.time === 'string' && dayjs(entry.time).isValid())
+        : [];
+    } catch { return []; }
+  })();
+  const recentFeeding = feedingHistory[feedingHistory.length - 1];
+  const elapsedMinutes = recentFeeding ? Math.max(0, dayjs().diff(dayjs(recentFeeding.time), 'minute')) : 165;
+  const elapsedLabel = elapsedMinutes < 60
+    ? (language === 'zh' ? `${elapsedMinutes}分钟前` : `${elapsedMinutes} min ago`)
+    : elapsedMinutes < 1440
+      ? (language === 'zh' ? `${Math.floor(elapsedMinutes / 60)}小时${elapsedMinutes % 60}分钟前` : `${Math.floor(elapsedMinutes / 60)} h ${elapsedMinutes % 60} min ago`)
+      : (language === 'zh' ? `${Math.floor(elapsedMinutes / 1440)}天前` : `${Math.floor(elapsedMinutes / 1440)} d ago`);
+  const todayFeedings = feedingHistory.filter((entry) => dayjs(entry.time).isSame(dayjs(), 'day'));
+  const todayMl = feedingHistory.length ? todayFeedings.reduce((sum, entry) => sum + entry.ml, 0) : 980;
   const waterStale =
     dayjs().diff(dayjs(deviceData.lastWaterRefill), 'hour') >= 24;
   const waterQualityLevel = getWaterQualityLevel(deviceData.waterTds);
+  const resourceWarnings = getResourceWarnings(deviceData.waterAmount, deviceData.powderAmount, waterQualityLevel, mixingChamberCount);
+  const showPowderCleanReminder =
+    mixingChamberCount === 6 && dismissedChamberCount !== mixingChamberCount;
+  const resourceAlarms = getResourceAlarms(deviceData.waterAmount, deviceData.powderAmount, waterQualityLevel, mixingChamberCount);
+  const hasResourceAlarm = Object.values(resourceAlarms).some(Boolean);
+  const isBlocked = !isMaking && (isResourceBlocked(resourceAlarms, mode) || formulaSetupRequired);
+  const resourceAlarmMessages = [
+    resourceAlarms.water && (language === 'zh' ? '水箱水量不足，请先加水' : 'Not enough water in the tank. Please refill first.'),
+    resourceAlarms.formula && (language === 'zh' ? '设备出粉异常，请检查是否缺粉或出粉口堵塞' : 'Formula dispensing error. Check whether the powder container is empty or the powder outlet is blocked.'),
+    resourceAlarms.quality && (language === 'zh' ? '检测到水箱水质较差，为了宝宝健康，建议换新鲜的水' : "Poor water quality detected in the tank. For your baby's health, we recommend replacing it with fresh water."),
+    resourceAlarms.chamber && (language === 'zh' ? '混合仓已使用 8 次或以上，请清洁后调奶' : 'Mixing chamber used 8 or more times. Clean before making formula.'),
+  ].filter((message): message is string => Boolean(message));
+  const resourceQualityLabel = waterQualityLevel === 'good'
+    ? (language === 'zh' ? '一般' : 'Normal')
+    : t(waterQualityLevel === 'excellent' ? 'maker.waterQualityExcellent' : 'maker.waterQualityPoor');
   const waterQuality = {
     excellent: {
       label: t('maker.waterQualityExcellent'),
@@ -253,7 +354,7 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
     dayjs().diff(dayjs(deviceData.lastPowderRefill), 'hour') >= 24;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const selectedWaterTemperature = WATER_TEMP_OPTIONS[waterTempIndex];
-  const isHighTemperatureChildLock = selectedWaterTemperature.celsius > 55;
+  const isHighWaterTemperature = selectedWaterTemperature.mode === 'heated' && selectedWaterTemperature.celsius >= 50;
 
   useEffect(() => {
     if (!isMaking) {
@@ -277,14 +378,9 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
   }, [mode]);
 
   useEffect(() => {
-    if (isHighTemperatureChildLock) {
-      setChildLock(true);
-    }
-  }, [isHighTemperatureChildLock]);
-
-  useEffect(() => {
     const handleReset = () => {
       setMixingChamberCount(0);
+      setDismissedChamberCount(null);
       setHasFormulaProfile(false);
       setFormulaProfile(DEFAULT_FORMULA_PROFILE);
       setMode('milk');
@@ -307,13 +403,12 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
   };
 
   const handleStart = () => {
-    if (waterLow || powderError || powderCleanDue || formulaSetupRequired)
+    if (isResourceBlocked(resourceAlarms, mode) || formulaSetupRequired)
       return;
     setIsMaking(true);
     setProgress(0);
     timerRef.current = setTimeout(() => {
       setIsMaking(false);
-      setShowCompleteToast(true);
       if (mode === 'milk') {
         const oz = waterAmount;
         const tempC = selectedWaterTemperature.celsius;
@@ -333,7 +428,8 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
           powderTargetG +
           (Math.random() - 0.3) * 1
         ).toFixed(1);
-        const tempActualC = Math.round(tempC + (Math.random() - 0.3) * 4);
+        // Room mode has no numeric target; the demo has no measured ambient temperature.
+        const tempActualC = tempC === null ? null : Math.round(tempC + (Math.random() - 0.3) * 4);
         const totalMilkActual = +(waterActualOz + powderActualG / 10).toFixed(
           1,
         );
@@ -379,11 +475,12 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
             waterActualOz,
             powderTargetG,
             powderActualG,
+            temperatureMode: selectedWaterTemperature.mode,
             tempTargetC: tempC,
             tempActualC: tempActualC,
             totalMilkTargetOz: totalMilkTarget,
             totalMilkActualOz: totalMilkActual,
-            timestamp: dayjs().format('MM/DD HH:mm'),
+            timestamp: dayjs().toISOString(),
             feedingStats: {
               todayCupCount,
               todayCumulativeMl,
@@ -410,11 +507,9 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
           ),
         });
 
-        setTimeout(() => {
-          setShowCompleteToast(false);
-          navigate('/formula-result');
-        }, 1500);
+        navigate('/formula-result');
       } else {
+        setShowCompleteToast(true);
         setTimeout(() => setShowCompleteToast(false), 2500);
       }
     }, 4000);
@@ -438,9 +533,9 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
 
   return (
     <IPhoneFrame
-      background="linear-gradient(to bottom, #FFE29F 0%, #F8F7F5 40%)"
+      background="linear-gradient(180deg, #FCECBD 0%, #FAF0D7 20%, #F9F5EB 35%, #F8F7F5 44%, #F8F7F5 100%)"
       overlay={
-        cleaningIncomplete ? (
+        completionOverlay ?? (cleaningIncomplete ? (
           <AnimatePresence>
             <motion.div
               initial={{ opacity: 0 }}
@@ -515,40 +610,58 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
               </motion.div>
             </motion.div>
           </AnimatePresence>
-        ) : undefined
+        ) : undefined)
       }
     >
-      <div className="relative flex h-full flex-col">
+      <div className="fd06-control relative flex h-full flex-col" inert={completionOverlay ? true : undefined} aria-hidden={completionOverlay ? true : undefined} data-warning={Boolean(waterLowActive || powderErrorActive || powderCleanDue || nightWaterLow || showPowderCleanReminder || showWaterCalibrationReminder || showTubeCleanReminder)}>
         {/* Navigation Bar */}
-        <div className="flex items-center justify-between px-5 pt-6 pb-2">
+        <div className="control-nav flex items-center justify-between">
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={handleBack}
+            aria-label={t('common.back')}
             className="flex h-[36px] w-[36px] items-center justify-center rounded-full bg-white"
             style={{ boxShadow: '0px 2px 6px rgba(0,0,0,0.06)' }}
           >
-            <ArrowLeft className="h-4 w-4" style={{ color: '#221122' }} />
+            <ChevronRight className="h-6 w-6 rotate-180" style={{ color: '#221122' }} />
           </motion.button>
           <h1
             className="text-[17px] font-semibold"
             style={{ color: '#221122' }}
           >
-            {t('maker.title')}
+            {language === 'zh' ? t('maker.title') : 'Formula Disp...'}
           </h1>
+          <div className="control-nav-actions">
+            <motion.button whileTap={{ scale: 0.95 }} onClick={() => navigate('/device-assistant')} aria-label={t('deviceAssistant.title')}>
+              <NotebookTabs className="h-5 w-5" />
+            </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => navigate('/device-settings')}
+            aria-label={language === 'zh' ? '设备设置' : 'Device settings'}
             className="flex h-[36px] w-[36px] items-center justify-center rounded-full bg-white"
             style={{ boxShadow: '0px 2px 6px rgba(0,0,0,0.06)' }}
           >
             <Settings className="h-5 w-5" style={{ color: '#221122' }} />
           </motion.button>
+          </div>
         </div>
 
-        {/* Water Low Warning Banner */}
-        {waterLow && (waterLowDismissable ? !waterLowDismissed : true) && (
+        {hasResourceAlarm && (
+          <div className="resource-alarm-banner" role="alert">
+            <AlertTriangle aria-hidden="true" />
+            <div>
+              {resourceAlarmMessages.map(message => <p key={message}>{message}</p>)}
+              {resourceAlarms.chamber && <button type="button" className="control-alert-action" onClick={() => navigate('/faq/mixing-chamber-cleaning')}><span>{language === 'zh' ? '前往清洁' : 'Go to cleaning'}</span><ChevronRight aria-hidden="true" /></button>}
+              {resourceAlarms.formula && <button type="button" className="control-alert-action" onClick={() => navigate('/faq/powder-output-error')}><span>{t('maker.troubleShooting')}</span><ChevronRight aria-hidden="true" /></button>}
+            </div>
+          </div>
+        )}
+
+        {/* Retained legacy exception banners; unified data-driven alarms take precedence. */}
+        {!hasResourceAlarm && waterLow && (waterLowDismissable ? !waterLowDismissed : true) && (
           <div
-            className="absolute z-20 left-5 right-5 top-[64px] flex items-center gap-2 rounded-[14px] px-3 py-2.5"
+            className="control-alert-overlay absolute z-20 left-5 right-5 flex items-center gap-2 rounded-[14px] px-3 py-2.5"
             style={{
               background: 'linear-gradient(135deg, #FFF7ED 0%, #FEE2CE 100%)',
               boxShadow: '0 4px 16px rgba(234, 88, 12, 0.15)',
@@ -580,10 +693,10 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
         )}
 
         {/* Powder Error Warning Banner */}
-        {powderError &&
+        {!hasResourceAlarm && powderError &&
           (powderErrorDismissable ? !powderErrorDismissed : true) && (
             <div
-              className="absolute z-20 left-5 right-5 top-[64px] rounded-[14px] px-3 py-2.5"
+              className="control-alert-overlay absolute z-20 left-5 right-5 rounded-[14px] px-3 py-2.5"
               style={{
                 background: 'linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%)',
                 boxShadow: '0 4px 16px rgba(185, 28, 28, 0.12)',
@@ -606,7 +719,8 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                   {t('maker.powderError')}
                 </span>
               </div>
-              <div
+              <button
+                type="button"
                 onClick={() => {
                   if (powderErrorDismissable) {
                     setPowderErrorDismissed(true);
@@ -614,26 +728,20 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                     navigate('/faq/powder-output-error');
                   }
                 }}
-                className="mt-1.5 flex cursor-pointer items-center justify-end gap-0.5"
+                className="control-alert-action control-alert-action-offset"
               >
-                <span
-                  className="text-[12px] font-medium"
-                  style={{ color: '#B91C1C' }}
-                >
+                <span>
                   {t('maker.troubleShooting')}
                 </span>
-                <ChevronRight
-                  className="h-3 w-3"
-                  style={{ color: '#B91C1C' }}
-                />
-              </div>
+                <ChevronRight aria-hidden="true" />
+              </button>
             </div>
           )}
 
         {/* Mixing Chamber Clean Reminder Banner - warning, non-blocking */}
-        {powderCleanReminder && (
+        {!hasResourceAlarm && showPowderCleanReminder && (
           <div
-            className="absolute z-20 left-5 right-5 top-[64px] flex items-center gap-2 rounded-[14px] px-3 py-2.5"
+            className="control-alert-overlay absolute z-20 left-5 right-5 flex items-center gap-2 rounded-[14px] px-3 py-2.5"
             style={{
               background: 'linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%)',
               boxShadow: '0 4px 16px rgba(217, 119, 6, 0.12)',
@@ -646,18 +754,28 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
               <AlertTriangle className="h-4 w-4" style={{ color: '#D97706' }} />
             </div>
             <span
-              className="text-[12px] font-medium leading-snug"
+              className="flex-1 text-[12px] font-medium leading-snug"
               style={{ color: '#92400E' }}
             >
               {t('maker.cleanReminder')}
             </span>
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setDismissedChamberCount(mixingChamberCount)}
+              aria-label={t('common.close')}
+              title={t('common.close')}
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+              style={{ background: 'rgba(217, 119, 6, 0.1)' }}
+            >
+              <X className="h-3 w-3" style={{ color: '#D97706' }} />
+            </motion.button>
           </div>
         )}
 
         {/* Mixing Chamber Clean Due Banner - blocking */}
-        {powderCleanDue && (
+        {!hasResourceAlarm && powderCleanDue && (
           <div
-            className="absolute z-20 left-5 right-5 top-[64px] flex items-center gap-2 rounded-[14px] px-3 py-2.5"
+            className="control-alert-overlay absolute z-20 left-5 right-5 flex items-center gap-2 rounded-[14px] px-3 py-2.5"
             style={{
               background: 'linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%)',
               boxShadow: '0 4px 16px rgba(185, 28, 28, 0.12)',
@@ -679,9 +797,9 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
         )}
 
         {/* Night Water Low Banner - advance warning, non-blocking */}
-        {nightWaterLow && (
+        {!hasResourceAlarm && nightWaterLow && (
           <div
-            className="absolute z-20 left-5 right-5 top-[64px] flex items-center gap-2 rounded-[14px] px-3 py-2.5"
+            className="control-alert-overlay absolute z-20 left-5 right-5 flex items-center gap-2 rounded-[14px] px-3 py-2.5"
             style={{
               background: 'linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%)',
               boxShadow: '0 4px 16px rgba(79, 70, 229, 0.12)',
@@ -703,12 +821,12 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
         )}
 
         {/* Water Calibration Reminder Banner - dismissable */}
-        {showWaterCalibrationReminder && (
+        {!hasResourceAlarm && showWaterCalibrationReminder && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="absolute z-20 left-5 right-5 top-[64px] flex items-center gap-2 rounded-[14px] px-3 py-2.5"
+            className="control-alert-overlay absolute z-20 left-5 right-5 flex items-center gap-2 rounded-[14px] px-3 py-2.5"
             style={{
               background: 'linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%)',
               boxShadow: '0 4px 16px rgba(79, 70, 229, 0.12)',
@@ -742,9 +860,9 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
         )}
 
         {/* Tube Clean Reminder Banner - dismissable with action link */}
-        {showTubeCleanReminder && (
+        {!hasResourceAlarm && showTubeCleanReminder && (
           <div
-            className="absolute z-20 left-5 right-5 top-[64px] rounded-[14px] px-3 py-2.5"
+            className="control-alert-overlay absolute z-20 left-5 right-5 rounded-[14px] px-3 py-2.5"
             style={{
               background: 'linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%)',
               boxShadow: '0 4px 16px rgba(79, 70, 229, 0.12)',
@@ -775,24 +893,20 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                 <X className="h-3 w-3" style={{ color: '#4F46E5' }} />
               </motion.button>
             </div>
-            <div
+            <button
+              type="button"
               onClick={() => navigate('/device-cleaning')}
-              className="mt-1.5 flex cursor-pointer items-center justify-end gap-0.5"
+              className="control-alert-action control-alert-action-offset"
             >
-              <span
-                className="text-[12px] font-medium"
-                style={{ color: '#4F46E5' }}
-              >
-                {t('maker.tubeCleanGo')}
-              </span>
-              <ChevronRight className="h-3 w-3" style={{ color: '#4F46E5' }} />
-            </div>
+              <span>{t('maker.tubeCleanGo')}</span>
+              <ChevronRight aria-hidden="true" />
+            </button>
           </div>
         )}
 
         {/* Scrollable Content */}
         <div
-          className={`flex-1 space-y-4 overflow-y-auto px-5 pb-3 transition-opacity duration-300 ${
+          className={`control-scroll flex-1 space-y-4 overflow-y-auto px-5 pb-3 transition-opacity duration-300 ${
             isMaking || waterLowActive || powderErrorActive || powderCleanDue
               ? 'pointer-events-none opacity-40'
               : ''
@@ -800,30 +914,25 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
         >
           {/* Device Image with Resource Indicators */}
           <motion.div
+            ref={resourceHeroRef}
             layout
-            className="relative -mt-5 flex flex-col items-center justify-center py-1"
+            className="control-hero relative flex flex-col items-center justify-center"
           >
             <Image
               src={DEVICE_IMAGE_URL}
               alt="Baby Formula Maker Device"
-              className="h-[250px] w-[175px] object-contain"
-              style={{
-                filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.08))',
-              }}
+              className="control-device object-contain"
             />
 
-            <div className="-mt-2 grid w-full grid-cols-3 gap-2">
+            <div className="control-resources">
               {/* Mixing Chamber Indicator */}
-              <div className="min-w-0">
+              <div className="resource-chamber min-w-0" data-blocked={mixingChamberBlocked} data-warning={resourceWarnings.chamber} data-alarm={resourceAlarms.chamber}>
                 <motion.button
                   whileTap={{ scale: 0.92 }}
                   aria-expanded={resourcePopup === 'powder'}
+                  aria-label={`${t('maker.mixingChamber')}: ${mixingChamberCount}`}
                   aria-controls="resource-detail-panel"
-                  onClick={() =>
-                    setResourcePopup(
-                      resourcePopup === 'powder' ? null : 'powder',
-                    )
-                  }
+                  onClick={(event) => toggleResourcePopup('powder', event.currentTarget)}
                   className="relative flex h-[70px] w-full flex-col items-center justify-center gap-0.5 rounded-[14px] px-1.5"
                   style={{
                     background: 'white',
@@ -835,7 +944,7 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                           : '4px 4px 10px hsl(330 10% 85% / 0.3), -4px -4px 10px hsl(0 0% 100% / 0.8)',
                   }}
                 >
-                  <FlaskConical
+                  <SlidersHorizontal
                     className="h-4 w-4"
                     style={{
                       color: mixingChamberBlocked ? '#DC2626' : '#C4956A',
@@ -850,7 +959,7 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                       color: mixingChamberBlocked ? '#DC2626' : '#221122',
                     }}
                   >
-                    {mixingChamberCount}次
+                    {mixingChamberCount}
                   </span>
                 </motion.button>
               </div>
@@ -859,13 +968,12 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
               <motion.button
                 whileTap={{ scale: 0.92 }}
                 aria-expanded={resourcePopup === 'formula'}
+                aria-label={`${t('maker.formulaCan')}: ${Math.round(deviceData.powderAmount)} g`}
                 aria-controls="resource-detail-panel"
-                onClick={() =>
-                  setResourcePopup(
-                    resourcePopup === 'formula' ? null : 'formula',
-                  )
-                }
-                className="relative flex h-[70px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-[14px] bg-white px-1"
+                onClick={(event) => toggleResourcePopup('formula', event.currentTarget)}
+                className="resource-formula relative flex h-[70px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-[14px] bg-white px-1"
+                data-warning={resourceWarnings.formula}
+                data-alarm={resourceAlarms.formula}
                 style={{
                   boxShadow:
                     resourcePopup === 'formula'
@@ -881,22 +989,19 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                   className="text-[11px] font-bold leading-tight"
                   style={{ color: '#221122' }}
                 >
-                  {t('maker.powderCupsRemaining', {
-                    cups: POWDER_REMAINING_CUPS,
-                    grams: POWDER_REMAINING_GRAMS,
-                  })}
+                  {Math.round(deviceData.powderAmount)} g
                 </span>
               </motion.button>
 
               {/* Water Level Indicator */}
-              <div className="min-w-0">
+              <div className="resource-water min-w-0" data-warning={resourceWarnings.water} data-alarm={resourceAlarms.water}>
                 <motion.button
                   whileTap={{ scale: 0.92 }}
-                  aria-expanded={resourcePopup === 'water'}
+                  aria-expanded={resourcePopup === 'water' && resourceTrigger?.dataset.resource === 'water'}
+                  data-resource="water"
+                  aria-label={`${t('maker.waterTank')}: ${formatVolumeFromMl(deviceData.waterAmount * 1000, unit)}`}
                   aria-controls="resource-detail-panel"
-                  onClick={() =>
-                    setResourcePopup(resourcePopup === 'water' ? null : 'water')
-                  }
+                  onClick={(event) => toggleResourcePopup('water', event.currentTarget)}
                   className="relative flex h-[70px] w-full flex-col items-center justify-center gap-0.5 rounded-[14px] px-1.5"
                   style={{
                     background: 'white',
@@ -918,34 +1023,36 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                   </span>
                 </motion.button>
               </div>
+              <button
+                className="resource-quality"
+                data-warning={resourceWarnings.quality}
+                data-alarm={resourceAlarms.quality}
+                aria-label={`${t('maker.waterQualityTds')}: ${resourceQualityLabel}`}
+                aria-expanded={resourcePopup === 'water' && resourceTrigger?.dataset.resource === 'quality'}
+                data-resource="quality"
+                aria-controls="resource-detail-panel"
+                onClick={(event) => toggleResourcePopup('water', event.currentTarget)}
+              >
+                <span className="tds-icon"><Shield /><small>TDS</small></span>
+                <strong>{resourceQualityLabel}</strong>
+              </button>
             </div>
 
             <AnimatePresence initial={false} mode="wait">
               {resourcePopup && (
                 <motion.div
                   id="resource-detail-panel"
-                  key={resourcePopup}
+                  key={`${resourcePopup}-${resourceTrigger?.dataset.resource}`}
                   initial={{ opacity: 0, y: 6, scale: 0.97 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 6, scale: 0.97 }}
                   transition={{ duration: 0.18, ease: 'easeOut' }}
-                  className="absolute bottom-[78px] z-20 rounded-[16px] px-2.5 py-2"
+                  className={showSimpleResourceTip ? 'water-tank-tip absolute z-20' : 'absolute z-20 rounded-[16px] px-2.5 py-2'}
                   style={{
-                    width:
-                      resourcePopup === 'powder'
-                        ? '174px'
-                        : resourcePopup === 'formula'
-                          ? '214px'
-                          : '218px',
-                    left:
-                      resourcePopup === 'powder'
-                        ? '0'
-                        : resourcePopup === 'formula'
-                          ? '50%'
-                          : undefined,
-                    right: resourcePopup === 'water' ? '0' : undefined,
-                    marginLeft:
-                      resourcePopup === 'formula' ? '-107px' : undefined,
+                    width: resourcePosition.width,
+                    left: resourcePosition.left,
+                    bottom: resourcePosition.bottom,
+                    transformOrigin: `${resourcePosition.arrow}px bottom`,
                     background: 'rgba(255,255,255,0.99)',
                     boxShadow:
                       '0 8px 24px rgba(72,48,34,0.12), 0 2px 6px rgba(72,48,34,0.06)',
@@ -954,16 +1061,28 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                   <div
                     className="absolute -bottom-[4px] h-2 w-2"
                     style={{
-                      left:
-                        resourcePopup === 'powder'
-                          ? '32%'
-                          : resourcePopup === 'formula'
-                            ? '50%'
-                            : '74%',
+                      left: resourcePosition.arrow,
                       transform: 'translateX(-50%) rotate(45deg)',
                       background: 'white',
                     }}
                   />
+                  {showSimpleResourceTip && (
+                    <div className="water-tank-tip-content">
+                      {showSimpleChamberTip ? <SlidersHorizontal className="water-tank-tip-icon" size={22} strokeWidth={1.6} aria-hidden="true" /> : showSimpleQualityTip ? <Shield className="water-tank-tip-icon" size={22} strokeWidth={1.6} aria-hidden="true" /> : showSimpleFormulaTip ? <Milk className="water-tank-tip-icon" size={22} strokeWidth={1.6} aria-hidden="true" /> : <Droplets className="water-tank-tip-icon" size={22} strokeWidth={1.6} aria-hidden="true" />}
+                      <p>{showSimpleChamberTip
+                        ? (language === 'zh' ? '混合仓清洁后的使用次数（每调奶 8 次后请清洁）' : 'Number of uses after cleaning the mixing tank (clean after every 8 batches of formula)')
+                        : showSimpleFormulaTip
+                        ? (language === 'zh' ? '奶粉仓内剩余奶粉量' : 'Amount of Formula Remaining in the Powder Container')
+                        : showSimpleQualityTip
+                          ? (language === 'zh' ? '水箱内水质状态' : 'Water Quality Status in the Tank')
+                          : (language === 'zh' ? '水箱内剩余水量' : 'Remaining Water Level in the Tank')}</p>
+                      <button type="button" aria-label={language === 'zh' ? '关闭提示' : 'Close tip'} onClick={() => setResourcePopup(null)}>
+                        <X size={20} strokeWidth={1.5} />
+                      </button>
+                    </div>
+                  )}
+                  {/* Legacy resource details remain available through the flags above. */}
+                  <div hidden={showSimpleResourceTip}>
                   <div className="mb-1.5 flex items-center gap-1.5">
                     {resourcePopup === 'powder' ? (
                       <FlaskConical
@@ -1057,8 +1176,8 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                           style={{ color: '#221122' }}
                         >
                           {t('maker.powderCupsRemaining', {
-                            cups: POWDER_REMAINING_CUPS,
-                            grams: POWDER_REMAINING_GRAMS,
+                            cups: Math.floor(deviceData.powderAmount / POWDER_PER_CUP_GRAMS),
+                            grams: Math.round(deviceData.powderAmount),
                           })}
                         </span>
                       </div>
@@ -1166,14 +1285,42 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                       )}
                     </>
                   )}
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
           </motion.div>
 
+          <motion.button
+            whileTap={{ scale: 0.98 }}
+            onClick={() => navigate('/feeding-stats')}
+            className="control-last-feed"
+            aria-label={t('maker.feedingStats')}
+          >
+            <span className="last-feed-label">{language === 'zh' ? '最近一次调奶' : 'Last'}</span>
+            <ChevronRight className="last-feed-chevron" />
+            <div className="last-feed-values">
+              <span className="last-feed-amount" aria-label={formatVolumeFromMl(recentFeeding?.ml ?? 90, unit)}>
+                <strong>{roundVolume(unit === 'ml' ? (recentFeeding?.ml ?? 90) : mlToOz(recentFeeding?.ml ?? 90))}</strong>
+                <span>{unit}</span>
+              </span>
+              <span className="last-feed-elapsed" aria-label={elapsedLabel}>
+                {elapsedLabel.split(/(\d+)/).filter(Boolean).map((part, index) =>
+                  /^\d+$/.test(part)
+                    ? <strong key={index}>{part}</strong>
+                    : <span key={index}>{part}</span>
+                )}
+              </span>
+            </div>
+            <span className="last-feed-today">{language === 'zh' ? '今日' : 'Today'} {formatVolumeFromMl(todayMl, unit)}</span>
+            <span className="last-feed-chart" aria-hidden="true">
+              {(todayFeedings.length ? todayFeedings.slice(-7).map((entry) => Math.max(6, Math.min(32, entry.ml / 6))) : [20, 22, 14, 26, 20, 32, 20]).map((height, index) => <i key={index} style={{ height }} />)}
+            </span>
+          </motion.button>
+
           {/* Mode Toggle */}
           <div
-            className="flex h-[44px] rounded-[22px] p-1"
+            className="control-mode flex h-[46px] rounded-[24px] p-1"
             style={{
               background: '#F0EFEE',
             }}
@@ -1270,11 +1417,12 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
           )}
 
           {/* Formula Selection Card - only visible in milk mode */}
+          <div className="control-parameters">
           {mode === 'milk' && showFormulaControls && (
             <motion.div
               whileTap={{ scale: 0.98 }}
               onClick={handleFormulaCardClick}
-              className="flex cursor-pointer items-center justify-between rounded-[20px] bg-white px-4 py-3"
+              className="control-formula flex cursor-pointer items-center justify-between rounded-[20px] bg-white px-4 py-3"
               style={{ boxShadow: '0px 4px 12px rgba(0,0,0,0.04)' }}
             >
               <div>
@@ -1282,7 +1430,7 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                   className="text-[17px] font-semibold"
                   style={{ color: '#221122' }}
                 >
-                  {formulaProfile.brand}
+                  <Milk className="mr-2 inline-block h-4 w-4" />{formulaProfile.brand}
                 </p>
                 <p className="mt-0.5 text-[13px]" style={{ color: '#999497' }}>
                   {t('maker.formulaRatioConfigured', {
@@ -1302,24 +1450,20 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
           {(mode === 'water' || showFormulaControls) && (
             <div
               data-connector="water-stepper"
-              className="rounded-[20px] bg-white p-4"
+              className="control-steppers rounded-[20px] bg-white p-4"
               style={{ boxShadow: '0px 4px 12px rgba(0,0,0,0.04)' }}
             >
               {/* Water Amount */}
-              <div className="mb-4">
+              <div className="control-stepper-row">
                 <div className="flex items-center gap-1.5 mb-2">
-                  <Image
-                    src="https://miaoda.feishu.cn/aily/api/v1/feisuda/attachments/9dbb320b-86cd-4a35-9c71-5a16661ae145/raw"
-                    alt="icon"
-                    className="h-4 w-4 object-contain"
-                  />
+                  <Baby className="h-4 w-4" />
                   <span
                     className="text-[15px] font-medium"
                     style={{ color: '#221122' }}
                   >
                     {mode === 'water'
                       ? t('maker.waterAmount')
-                      : t('maker.waterForFormula')}
+                      : language === 'zh' ? '调奶量' : 'Formula Amount'}
                   </span>
                 </div>
                 <div
@@ -1327,6 +1471,7 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                   style={{ background: '#F5F5F5' }}
                 >
                   <StepperButton2
+                    label={language === 'zh' ? '减少水量' : 'Decrease amount'}
                     icon={<Minus className="h-5 w-5" />}
                     disabled={displayedWaterAmount <= displayedWaterMin}
                     onClick={() => adjustWaterAmount(-1)}
@@ -1341,6 +1486,7 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                     {displayedWaterAmount} {unit}
                   </motion.span>
                   <StepperButton2
+                    label={language === 'zh' ? '增加水量' : 'Increase amount'}
                     icon={<Plus className="h-5 w-5" />}
                     disabled={displayedWaterAmount >= displayedWaterMax}
                     onClick={() => adjustWaterAmount(1)}
@@ -1368,13 +1514,9 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
               </div>
 
               {/* Water Temp */}
-              <div>
+              <div className="control-stepper-row">
                 <div className="flex items-center gap-1.5 mb-2">
-                  <Image
-                    src="https://miaoda.feishu.cn/aily/api/v1/feisuda/attachments/dd3e77dc-904f-42c1-8f80-b134adb7fa8e/raw"
-                    alt="temp icon"
-                    className="h-4 w-4 object-contain"
-                  />
+                  <Thermometer className="h-4 w-4" />
                   <span
                     className="text-[15px] font-medium"
                     style={{ color: '#221122' }}
@@ -1387,6 +1529,7 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                   style={{ background: '#F5F5F5' }}
                 >
                   <StepperButton2
+                    label={language === 'zh' ? '降低水温' : 'Decrease temperature'}
                     icon={<Minus className="h-5 w-5" />}
                     disabled={waterTempIndex <= 0}
                     onClick={() =>
@@ -1400,14 +1543,17 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                     className="flex-1 text-center text-[17px] font-semibold"
                     style={{
                       color:
-                        selectedWaterTemperature.celsius >= 50
+                        isHighWaterTemperature
                           ? '#E67E22'
                           : '#221122',
                     }}
                   >
-                    {selectedWaterTemperature.celsius} °C
+                    {selectedWaterTemperature.mode === 'room'
+                      ? t('maker.roomTemp')
+                      : `${selectedWaterTemperature.celsius} °C`}
                   </motion.span>
                   <StepperButton2
+                    label={language === 'zh' ? '提高水温' : 'Increase temperature'}
                     icon={<Plus className="h-5 w-5" />}
                     disabled={waterTempIndex >= WATER_TEMP_OPTIONS.length - 1}
                     onClick={() =>
@@ -1420,21 +1566,18 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                     }
                   />
                 </div>
-                {selectedWaterTemperature.celsius >= 50 && (
+                {isHighWaterTemperature && (
                   <p
                     className="mt-2 pl-2 text-[12px]"
                     style={{ color: '#E67E22' }}
                   >
-                    {t(
-                      isHighTemperatureChildLock
-                        ? 'maker.highTempChildLockWarning'
-                        : 'maker.highTempWarning',
-                    )}
+                    {t('maker.highTempWarning')}
                   </p>
                 )}
               </div>
             </div>
           )}
+          </div>
 
           {/* Child Lock */}
           <div
@@ -1448,15 +1591,9 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
               >
                 {t('maker.childLock')}
               </span>
-              {isHighTemperatureChildLock && (
-                <p className="mt-0.5 text-[11px]" style={{ color: '#E67E22' }}>
-                  {t('maker.childLockAutoHighTemp')}
-                </p>
-              )}
             </div>
             <motion.button
               type="button"
-              disabled={isHighTemperatureChildLock}
               aria-pressed={childLock}
               onClick={() => setChildLock(!childLock)}
               className="relative h-[22px] w-[40px] rounded-full p-[2px] transition-colors duration-300 disabled:cursor-default"
@@ -1513,46 +1650,14 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
             </div>
           </div>
 
-          {/* Feeding Stats */}
-          <motion.div
-            whileTap={{ scale: 0.98 }}
-            onClick={() => navigate('/feeding-stats')}
-            className="flex cursor-pointer items-center justify-between rounded-[20px] bg-white px-4 py-3"
-            style={{ boxShadow: '0px 4px 12px rgba(0,0,0,0.04)' }}
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className="flex h-9 w-9 items-center justify-center rounded-full"
-                style={{ background: 'hsl(24 67% 32% / 0.08)' }}
-              >
-                <BarChart3 className="h-4 w-4" style={{ color: '#7D3C0F' }} />
-              </div>
-              <div>
-                <p
-                  className="text-[15px] font-medium"
-                  style={{ color: '#221122' }}
-                >
-                  {t('maker.feedingStats')}
-                </p>
-                <p className="text-[13px]" style={{ color: '#999497' }}>
-                  {t('maker.feedingStatsDesc')}
-                </p>
-              </div>
-            </div>
-            <ChevronRight className="h-5 w-5" style={{ color: '#999497' }} />
-          </motion.div>
         </div>
 
         {/* Start Button - Fixed at bottom */}
         <div
-          className="relative z-10 shrink-0 px-5 pb-6 pt-2"
-          style={{
-            background:
-              'linear-gradient(to bottom, rgba(248,247,245,0.72) 0%, rgba(248,247,245,0.96) 22%, #F8F7F5 48%)',
-            backdropFilter: 'blur(8px)',
-          }}
+          className="control-start relative z-10 shrink-0 px-5 pb-6 pt-2"
         >
           <motion.button
+            hidden
             whileTap={{ scale: 0.98 }}
             onClick={() => navigate('/feeding-stats')}
             className="mb-1.5 flex h-5 w-full items-center justify-center gap-2 whitespace-nowrap"
@@ -1571,7 +1676,7 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
             <BarChart3 className="h-3.5 w-3.5" style={{ color: '#8B4A1B' }} />
           </motion.button>
 
-          <div className={isBlocked ? 'pointer-events-none opacity-40' : ''}>
+          <div className={isBlocked ? 'pointer-events-none' : ''}>
             <button
               type="button"
               disabled={isBlocked}
@@ -1591,12 +1696,6 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                 }
               }}
               className="relative flex h-[52px] w-full cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-[26px] text-[17px] font-semibold text-white transition-all duration-150 active:scale-[0.98] disabled:cursor-not-allowed"
-              style={{
-                backgroundColor: isBlocked ? '#B0B0B0' : '#7D3C0F',
-                boxShadow: isMaking
-                  ? '0px 6px 16px rgba(125,60,15,0.3), 0 0 20px rgba(255,180,100,0.3)'
-                  : '0px 6px 16px rgba(125,60,15,0.3)',
-              }}
             >
               {isMaking && (
                 <div
@@ -1620,14 +1719,14 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                   : formulaSetupRequired
                     ? t('maker.configureFormulaFirst')
                     : mode === 'milk'
-                      ? t('maker.makeFormula')
-                      : t('maker.dispenseWater')}
+                      ? (language === 'zh' ? '开始' : 'Start')
+                      : (language === 'zh' ? '开始出水' : 'Start')}
               </span>
             </button>
           </div>
         </div>
 
-        {/* Completion Toast */}
+        {/* Water-only completion toast; formula completion uses the result sheet. */}
         <AnimatePresence>
           {showCompleteToast && (
             <motion.div

@@ -1,8 +1,8 @@
+import { PageBackIcon } from '@/components/PageNavigation';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AlertTriangle,
-  ArrowLeft,
   Image,
   Keyboard,
   RotateCcw,
@@ -216,15 +216,15 @@ const CaptureFormulaStep2: React.FC<CaptureFormulaStep2Props> = ({
     <IPhoneFrame background="#ffffff" overlay={failureOverlay}>
       <div className="relative flex h-full flex-col">
         {/* Header */}
-        <div className="flex items-center bg-white px-4 py-3">
+        <div className="fd06-page-nav">
           <motion.button
-            whileTap={{ scale: 0.92 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() =>
               navigate('/capture-formula-back-side' + firstUseSuffix)
             }
-            className="flex h-10 w-10 items-center justify-center"
+            className="fd06-page-back" aria-label={t('common.back')}
           >
-            <ArrowLeft className="h-6 w-6" style={{ color: '#221122' }} />
+            <PageBackIcon />
           </motion.button>
           <div className="flex-1 text-center">
             <span

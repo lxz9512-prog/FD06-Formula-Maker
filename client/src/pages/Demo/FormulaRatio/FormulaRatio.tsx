@@ -1,6 +1,7 @@
+import { PageBackIcon } from '@/components/PageNavigation';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Pencil, ScanLine } from 'lucide-react';
+import { Pencil, ScanLine } from 'lucide-react';
 import { motion } from 'framer-motion';
 import IPhoneFrame from '@client/src/components/IPhoneFrame';
 import { useTranslation } from '@client/src/hooks/useTranslation';
@@ -40,14 +41,14 @@ const FormulaRatio: React.FC = () => {
   return (
     <IPhoneFrame background="radial-gradient(ellipse 140% 58% at 50% 0%, #FDE397 0%, #FDE397 30%, transparent 70%), #F7F7F7">
       <div className="relative flex h-full flex-col">
-        <div className="grid grid-cols-[36px_1fr_36px] items-center px-5 pb-2 pt-6">
+        <div className="fd06-page-nav">
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={handleBack}
-            className="flex h-[36px] w-[36px] items-center justify-center rounded-full bg-white"
-            style={{ boxShadow: '0px 2px 6px rgba(0,0,0,0.06)' }}
+            className="fd06-page-back"
+             aria-label={t('common.back')}
           >
-            <ArrowLeft className="h-4 w-4" style={{ color: '#221122' }} />
+            <PageBackIcon />
           </motion.button>
           <h1
             className="text-center text-[17px] font-semibold"

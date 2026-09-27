@@ -1,6 +1,7 @@
+import { PageBackIcon } from '@/components/PageNavigation';
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Image, Zap } from 'lucide-react';
+import { Image, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import IPhoneFrame from '@client/src/components/IPhoneFrame';
 import { logger } from '@lark-apaas/client-toolkit/logger';
@@ -61,13 +62,13 @@ const CaptureFormula: React.FC = () => {
     <IPhoneFrame background="#ffffff">
       <div className="flex h-full flex-col">
         {/* Header */}
-        <div className="flex items-center bg-white px-4 py-3">
+        <div className="fd06-page-nav">
           <motion.button
-            whileTap={{ scale: 0.92 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => navigate('/scan-formula' + firstUseSuffix)}
-            className="flex h-10 w-10 items-center justify-center"
+            className="fd06-page-back" aria-label={t('common.back')}
           >
-            <ArrowLeft className="h-6 w-6" style={{ color: '#221122' }} />
+            <PageBackIcon />
           </motion.button>
           <div className="flex-1 text-center">
             <span

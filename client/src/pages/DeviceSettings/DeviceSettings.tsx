@@ -1,8 +1,8 @@
+import { PageBackIcon } from '@/components/PageNavigation';
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft,
   ChevronRight,
   Moon,
   Scale,
@@ -13,6 +13,7 @@ import IPhoneFrame from '@client/src/components/IPhoneFrame';
 import { Image } from '@client/src/components/ui/image';
 import deviceImage from '@/assets/fd06-device.png';
 import { useTranslation } from '@client/src/hooks/useTranslation';
+import './device-settings.css';
 
 const DEVICE_THUMBNAIL = deviceImage;
 
@@ -24,6 +25,7 @@ interface SettingItem {
   rightNode?: React.ReactNode;
   description?: string;
   disabled?: boolean;
+  hidden?: boolean;
   onClick?: () => void;
 }
 
@@ -81,6 +83,7 @@ const SettingSection: React.FC<{
   title: string;
   items: SettingItem[];
 }> = ({ title, items }) => {
+  const visibleItems = items.filter((item) => !item.hidden);
   return (
     <div className="mb-3">
       <p
@@ -90,11 +93,11 @@ const SettingSection: React.FC<{
         {title}
       </p>
       <div className="overflow-hidden rounded-[10px] bg-white">
-        {items.map((item, index) => (
+        {visibleItems.map((item, index) => (
           <SettingRow
             key={item.label}
             item={item}
-            isLast={index === items.length - 1}
+            isLast={index === visibleItems.length - 1}
           />
         ))}
       </div>
@@ -125,6 +128,7 @@ const DeviceSettings: React.FC = () => {
     },
     {
       label: t('deviceSettings.waterCalibration'),
+      hidden: true,
       icon: <Gauge className="h-4 w-4" style={{ color: '#888888' }} />,
       onClick: () => navigate('/water-calibration'),
     },
@@ -164,13 +168,14 @@ const DeviceSettings: React.FC = () => {
     <IPhoneFrame background="#F7F7F7">
       <div className="flex h-full flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-6 pb-3">
+        <div className="fd06-page-nav">
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={handleBack}
-            className="flex h-8 w-8 items-center justify-center"
+            aria-label={t('common.back')}
+            className="fd06-page-back"
           >
-            <ArrowLeft className="h-6 w-6" style={{ color: '#1A1A1A' }} />
+            <PageBackIcon />
           </motion.button>
           <h1
             className="text-[16px] font-semibold"
@@ -178,10 +183,10 @@ const DeviceSettings: React.FC = () => {
           >
             {t('deviceSettings.title')}
           </h1>
-          <div className="h-8 w-8" />
+          <div className="h-[43px] w-[43px] shrink-0" />
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 pb-6">
+        <div className="device-settings-content flex-1 overflow-y-auto px-4 pb-6">
           {/* Device Info Card */}
           <div className="mb-3 overflow-hidden rounded-[10px] bg-white">
             <motion.button

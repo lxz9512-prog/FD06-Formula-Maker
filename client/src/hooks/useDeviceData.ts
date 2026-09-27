@@ -12,21 +12,35 @@ interface DeviceData {
 }
 
 const STORAGE_KEY = "device_data";
+const WATER_CAPACITY_L = 1.5;
+const POWDER_CAPACITY_G = 500;
 
 const DEFAULT_DATA: DeviceData = {
   powderAmount: 300,
-  powderCapacity: 500,
+  powderCapacity: POWDER_CAPACITY_G,
   waterAmount: 1.5,
-  waterCapacity: 2.0,
+  waterCapacity: WATER_CAPACITY_L,
   waterTds: 42,
   lastWaterRefill: dayjs().subtract(26, "hour").toISOString(),
   lastPowderRefill: dayjs().subtract(20, "hour").toISOString(),
 };
 
+function normalizeData(data: DeviceData): DeviceData {
+  const clampAmount = (value: number, capacity: number, fallback: number) =>
+    Number.isFinite(value) ? Math.min(capacity, Math.max(0, value)) : fallback;
+  return {
+    ...data,
+    waterCapacity: WATER_CAPACITY_L,
+    powderCapacity: POWDER_CAPACITY_G,
+    waterAmount: clampAmount(data.waterAmount, WATER_CAPACITY_L, DEFAULT_DATA.waterAmount),
+    powderAmount: clampAmount(data.powderAmount, POWDER_CAPACITY_G, DEFAULT_DATA.powderAmount),
+  };
+}
+
 function loadData(): DeviceData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return { ...DEFAULT_DATA, ...JSON.parse(raw) };
+    if (raw) return normalizeData({ ...DEFAULT_DATA, ...JSON.parse(raw) });
   } catch {
     // ignore
   }
@@ -55,7 +69,7 @@ export function updateDeviceData(
   updates: Partial<DeviceData>
 ): DeviceData {
   const current = loadData();
-  const next = { ...current, ...updates };
+  const next = normalizeData({ ...current, ...updates });
   saveData(next);
   listeners.forEach((fn) => fn(next));
   return next;

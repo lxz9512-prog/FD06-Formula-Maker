@@ -1,7 +1,8 @@
+import { PageBackIcon } from '@/components/PageNavigation';
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Bell, AlertCircle } from "lucide-react";
+import { Bell, AlertCircle } from "lucide-react";
 import IPhoneFrame from "@client/src/components/IPhoneFrame";
 import { useTranslation } from "@client/src/hooks/useTranslation";
 
@@ -15,7 +16,6 @@ const NOTIFICATION_ITEMS: NotificationItem[] = [
   { key: "lowPowder", labelKey: "notificationSettings.lowPowder" },
   { key: "powderClean", labelKey: "notificationSettings.powderClean" },
   { key: "tubeClean", labelKey: "notificationSettings.tubeClean" },
-  { key: "waterCalibration", labelKey: "notificationSettings.waterCalibration" },
 ];
 
 const NotificationSettings: React.FC = () => {
@@ -33,13 +33,13 @@ const NotificationSettings: React.FC = () => {
     <IPhoneFrame background="#F7F7F7">
       <div className="flex h-full flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-6 pb-3">
+        <div className="fd06-page-nav">
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => navigate(-1)}
-            className="flex h-8 w-8 items-center justify-center"
+            className="fd06-page-back" aria-label={t('common.back')}
           >
-            <ArrowLeft className="h-6 w-6" style={{ color: "#1A1A1A" }} />
+            <PageBackIcon />
           </motion.button>
           <h1
             className="text-[16px] font-semibold"

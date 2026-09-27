@@ -3,7 +3,10 @@ import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import IPhoneFrame from '@client/src/components/IPhoneFrame';
-import { useTranslation } from '@client/src/hooks/useTranslation';
+import {
+  useTranslation,
+  type Language,
+} from '@client/src/hooks/useTranslation';
 import { Image } from '@client/src/components/ui/image';
 import deviceImage from '@/assets/fd06-device.png';
 import {
@@ -12,10 +15,55 @@ import {
 } from '@client/src/contexts/VolumeUnitContext';
 
 const DEVICE_IMAGE_URL = deviceImage;
+const MINUTE_MS = 60 * 1000;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
+
+const DEMO_LAST_FORMULA_MADE_AT = new Date(Date.now() - 23 * MINUTE_MS);
+
+const padDatePart = (value: number) => String(value).padStart(2, '0');
+
+const formatLastFormulaTime = (
+  date: Date,
+  language: Language,
+  now = new Date(),
+) => {
+  const elapsedMs = Math.max(0, now.getTime() - date.getTime());
+  const totalMinutes = Math.floor(elapsedMs / MINUTE_MS);
+
+  if (totalMinutes < 60) {
+    return language === 'zh'
+      ? `${totalMinutes}分钟前`
+      : `${totalMinutes} m ago`;
+  }
+
+  if (elapsedMs < DAY_MS) {
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    if (language === 'zh') {
+      return `${hours}小时${minutes > 0 ? `${minutes}分钟` : ''}前`;
+    }
+
+    return `${hours} h${minutes > 0 ? ` ${minutes} m` : ''} ago`;
+  }
+
+  if (elapsedMs <= 3 * DAY_MS) {
+    const days = Math.floor(elapsedMs / DAY_MS);
+    return language === 'zh'
+      ? `${days}天前`
+      : `${days} ${days === 1 ? 'day' : 'days'} ago`;
+  }
+
+  const monthDay = `${padDatePart(date.getMonth() + 1)}-${padDatePart(date.getDate())}`;
+  return date.getFullYear() === now.getFullYear()
+    ? monthDay
+    : `${date.getFullYear()}-${monthDay}`;
+};
 
 const DeviceList: React.FC = () => {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
   const { unit } = useVolumeUnit();
 
   const handleDeviceClick = () => {
@@ -132,6 +180,8 @@ const DeviceList: React.FC = () => {
                   src="https://miaoda.feishu.cn/aily/api/v1/feisuda/attachments/8a1ec7e0-f506-4a02-b394-62c7e554ab2e/raw"
                   alt="Baby Monitor"
                   className="h-full w-full object-cover"
+                  // Playback controls are baked into the source image; crop them out.
+                  style={{ transform: 'scale(1.3)', transformOrigin: 'center top' }}
                 />
               </div>
             </div>
@@ -173,7 +223,10 @@ const DeviceList: React.FC = () => {
                 </div>
                 <div className="mt-1.5 flex items-center gap-2">
                   <span className="text-[12px]" style={{ color: '#c4a882' }}>
-                    Today 08:30
+                    {formatLastFormulaTime(
+                      DEMO_LAST_FORMULA_MADE_AT,
+                      language,
+                    )}
                   </span>
                   <span className="text-[12px]" style={{ color: '#c4a882' }}>
                     ·
@@ -191,7 +244,7 @@ const DeviceList: React.FC = () => {
 
           {/* Bottom Tab Bar - Liquid Glass */}
           <div
-            className="liquid-glass absolute bottom-3 left-4 right-4"
+            className="liquid-glass absolute bottom-[26px] left-4 right-4"
             style={{ height: 62, borderRadius: 31 }}
           >
             <div className="relative z-10 flex h-full items-center justify-around">

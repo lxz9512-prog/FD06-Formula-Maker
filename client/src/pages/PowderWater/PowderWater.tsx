@@ -1,7 +1,8 @@
+import { PageBackIcon } from '@/components/PageNavigation';
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Droplets, Milk, Check } from "lucide-react";
+import { Droplets, Milk, Check } from "lucide-react";
 import dayjs from "dayjs";
 import IPhoneFrame from "@client/src/components/IPhoneFrame";
 import { useDeviceData } from "@client/src/hooks/useDeviceData";
@@ -56,13 +57,13 @@ const PowderWater: React.FC = () => {
     <IPhoneFrame background="#F7F7F7">
       <div className="relative flex h-full flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-6 pb-3">
+        <div className="fd06-page-nav">
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={handleBack}
-            className="flex h-8 w-8 items-center justify-center"
+            className="fd06-page-back" aria-label={t('common.back')}
           >
-            <ArrowLeft className="h-6 w-6" style={{ color: "#1A1A1A" }} />
+            <PageBackIcon />
           </motion.button>
           <h1 className="text-[16px] font-semibold" style={{ color: "#1A1A1A" }}>
             {t("powderWater.title")}

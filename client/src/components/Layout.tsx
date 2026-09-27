@@ -57,6 +57,11 @@ const navItems: NavItem[] = [
         icon: <AlertTriangle className="h-3.5 w-3.5" />,
       },
       {
+        path: '/water-quality-error',
+        label: '水质异常',
+        icon: <AlertTriangle className="h-3.5 w-3.5" />,
+      },
+      {
         path: '/powder-clean-reminder',
         label: '混合仓清洁提醒',
         icon: <AlertTriangle className="h-3.5 w-3.5" />,
@@ -74,11 +79,6 @@ const navItems: NavItem[] = [
       {
         path: '/cleaning-incomplete',
         label: '管路自清洁未完成',
-        icon: <AlertTriangle className="h-3.5 w-3.5" />,
-      },
-      {
-        path: '/water-calibration-reminder',
-        label: '水量校准提醒',
         icon: <AlertTriangle className="h-3.5 w-3.5" />,
       },
       {
@@ -179,6 +179,23 @@ interface InteractionSection {
   connector: string;
   items: string[];
 }
+
+const DEVICE_LIST_INTERACTION_SECTIONS: InteractionSection[] = [
+  {
+    title: '设备能力与状态展示',
+    icon: <List className="h-4 w-4" />,
+    color: '#8B4A1B',
+    connector: 'device-list-status',
+    items: [
+      '沿用原子化的能力和状态',
+      '差异点：空闲状态下（在线，但未工作），展示最近一次调奶的记录时间和调奶量',
+      '距上次调奶时间（x）＜60分钟：显示“n分钟前”，如“23分钟前”（英文：23 m ago）',
+      '60分钟≤距上次调奶时间（x）＜24小时：显示“n小时m分钟前”；m=0时省略分钟，如“1小时45分钟前”或“2小时前”（英文：1 h 45 m ago / 2 h ago）',
+      '24小时≤距上次调奶时间（x）≤3天：显示“n天前”，如“2天前”（英文：2 days ago）',
+      '距上次调奶时间（x）＞3天：同年显示“月-日”，如“03-12”；跨年显示“年-月-日”，如“2025-10-01”',
+    ],
+  },
+];
 
 const DEVICE_INTERACTION_SECTIONS: InteractionSection[] = [
   {
@@ -460,15 +477,18 @@ const Layout = () => {
   const location = useLocation();
   const currentNavPath = getCurrentNavPath(location.pathname, location.search);
   const svgRef = useRef<SVGSVGElement>(null);
+  const isDeviceListPage = location.pathname === '/';
   const isDevicePage = location.pathname === '/device';
   const formulaEditMode = currentNavPath.startsWith('/formula-edit?mode=')
     ? (currentNavPath.split('=')[1] as FormulaEditMode)
     : null;
-  const interactionSections = isDevicePage
-    ? DEVICE_INTERACTION_SECTIONS
-    : formulaEditMode
-      ? FORMULA_EDIT_INTERACTION_SECTIONS[formulaEditMode]
-      : [];
+  const interactionSections = isDeviceListPage
+    ? DEVICE_LIST_INTERACTION_SECTIONS
+    : isDevicePage
+      ? DEVICE_INTERACTION_SECTIONS
+      : formulaEditMode
+        ? FORMULA_EDIT_INTERACTION_SECTIONS[formulaEditMode]
+        : [];
 
   useEffect(() => {
     const handleVisibilityChange = () => {

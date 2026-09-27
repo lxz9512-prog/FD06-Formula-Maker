@@ -1,6 +1,6 @@
+import { PageBackIcon } from '@/components/PageNavigation';
 import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 import IPhoneFrame from '@client/src/components/IPhoneFrame';
 import { useTranslation } from '@client/src/hooks/useTranslation';
@@ -32,14 +32,14 @@ const CaptureFormulaFront: React.FC = () => {
         }}
       >
         {/* Header */}
-        <div className="flex items-center px-5 pt-6 pb-2">
+        <div className="fd06-page-nav">
           <motion.button
-            whileTap={{ scale: 0.92 }}
+            whileTap={{ scale: 0.95 }}
             onClick={() => navigate(isFirstUse ? '/device' : '/formula-ratio')}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-white"
-            style={{ boxShadow: NEUMORPHIC_SHADOW }}
+            className="fd06-page-back"
+             aria-label={t('common.back')}
           >
-            <ArrowLeft className="h-5 w-5" style={{ color: '#221122' }} />
+            <PageBackIcon />
           </motion.button>
           <div className="flex-1 text-center pr-10">
             <span

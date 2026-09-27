@@ -1,17 +1,18 @@
+import { PageBackIcon } from '@/components/PageNavigation';
 import React from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Play } from "lucide-react";
+import { Play } from "lucide-react";
 import IPhoneFrame from "@client/src/components/IPhoneFrame";
 import { Image } from "@client/src/components/ui/image";
 import { useTranslation } from "@client/src/hooks/useTranslation";
+import powderBinMinImage from '@/assets/powder-bin-min.png';
+import powderOutletCleaningImage from '@/assets/powder-outlet-cleaning.png';
+import mixingChamberLidCleaningImage from '@/assets/mixing-chamber-lid-cleaning.png';
 
-const BASE = (process.env.CLIENT_BASE_PATH || '').replace(/\/$/, '');
-const STORAGE_PREFIX = `${BASE}/runtime/api/v1/storage/object/bucket_aadkjs76sasew_static`;
-
-const IMG_POWDER_BIN_MIN = `${STORAGE_PREFIX}/static%2Faadkmgdleiobo_ve_miaoda`;
-const IMG_CLEAN_OUTLET = `${STORAGE_PREFIX}/static%2Faadkmgdp6zyvi_ve_miaoda`;
-const IMG_CLEAN_LID = `${STORAGE_PREFIX}/static%2Faadkmgchr4oai_ve_miaoda`;
+const IMG_POWDER_BIN_MIN = powderBinMinImage;
+const IMG_CLEAN_OUTLET = powderOutletCleaningImage;
+const IMG_CLEAN_LID = mixingChamberLidCleaningImage;
 
 const StepHeader: React.FC<{
   step: number;
@@ -41,13 +42,13 @@ const PowderOutputError: React.FC = () => {
     <IPhoneFrame background="#F7F7F7">
       <div className="relative flex h-full flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-6 pb-3">
+        <div className="fd06-page-nav">
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => navigate(-1)}
-            className="flex h-8 w-8 items-center justify-center"
+            className="fd06-page-back" aria-label={t('common.back')}
           >
-            <ArrowLeft className="h-6 w-6" style={{ color: "#1A1A1A" }} />
+            <PageBackIcon />
           </motion.button>
           <h1
             className="text-[16px] font-semibold"
@@ -74,7 +75,7 @@ const PowderOutputError: React.FC = () => {
                 <Image
                   src={IMG_POWDER_BIN_MIN}
                   alt="粉仓MIN线位置"
-                  className="h-full w-full object-cover"
+                  className="h-full w-full bg-white object-contain"
                 />
               </div>
             </div>
@@ -138,7 +139,7 @@ const PowderOutputError: React.FC = () => {
                   <Image
                     src={IMG_CLEAN_OUTLET}
                     alt="清洗粉仓出粉口"
-                    className="h-full w-full object-cover"
+                    className="h-full w-full bg-white object-contain"
                   />
                 </div>
                 <p
@@ -153,7 +154,7 @@ const PowderOutputError: React.FC = () => {
                   <Image
                     src={IMG_CLEAN_LID}
                     alt="清洗混合仓上盖"
-                    className="h-full w-full object-cover"
+                    className="h-full w-full bg-white object-contain"
                   />
                 </div>
                 <p

@@ -6,6 +6,11 @@
 @source "../../node_modules/streamdown/dist/*.js";
 @config "../../tailwind.config.ts";
 
+[data-custom-element='doubao-watermark'],
+[data-custom-element='doubao-watermark-mobile'] {
+  display: none !important;
+}
+
 * {
   scrollbar-width: none;
   -ms-overflow-style: none;

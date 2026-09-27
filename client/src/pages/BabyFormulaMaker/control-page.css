@@ -1,0 +1,95 @@
+/* Scoped to the shared control surface, including reminder/error variants. */
+.fd06-control { color: #29151f; --control-alert-top: 68px; }
+/* Shared offset for all floating exception/reminder banners; content stays in place. */
+.fd06-control > .resource-alarm-banner,
+.fd06-control > .control-alert-overlay { top: var(--control-alert-top); }
+/* Visual offset only: keep the device image and content at their existing positions. */
+.control-nav { position: relative; top: 8px; flex-shrink: 0; height: 66px; padding: 10px 15px 12px; gap: 10px; }
+.control-nav > button, .control-nav-actions {
+  height: 43px;
+  border: 0.5px solid rgba(147, 134, 102, 0.42);
+  border-top-color: rgba(255, 255, 255, 0.95);
+  border-bottom-color: rgba(255, 255, 255, 0.88);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.62) 0%, rgba(222, 219, 206, 0.32) 22%, rgba(244, 241, 227, 0.38) 55%, rgba(255, 255, 255, 0.72) 100%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(110%);
+  backdrop-filter: blur(12px) saturate(110%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.8), inset 0 -1px 2px rgba(255, 255, 255, 0.6), 0 6px 12px rgba(123, 105, 65, 0.06) !important;
+}
+.control-nav > button { width: 43px; flex-shrink: 0; }
+.control-nav h1 { position: absolute; left: 50%; transform: translateX(-50%); width: calc(100% - 252px); margin: 0; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; pointer-events: none; }
+.control-nav-actions { display: flex; width: 101px; border-radius: 24px; align-items: center; justify-content: space-evenly; flex-shrink: 0; }
+.control-nav-actions button { width: 43px; height: 40px; display: flex; align-items: center; justify-content: center; background: transparent !important; box-shadow: none !important; }
+.control-scroll { position: relative; top: -2px; padding: 0 15px 96px; scrollbar-width: none; }
+.control-scroll::-webkit-scrollbar { display: none; }
+.control-hero { padding-top: 6px; padding-bottom: 11px; }
+.control-device { height: 186px; width: 181px; background: none; }
+.control-resources { display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 300px; gap: 12px; margin: 9px auto 0; padding-inline: 8px; color: #696764; }
+.control-resources > * { flex: 0 0 auto; }
+.resource-water { order: 0; }
+.resource-formula { order: 1; }
+.resource-quality { order: 2; }
+.resource-chamber { order: 3; }
+.control-resources button { flex-direction: row; display: flex; width: auto; height: 34px; align-items: center; justify-content: center; gap: 4px; padding: 0; background: transparent !important; box-shadow: none !important; border-radius: 10px; color: #696764; }
+.control-resources button[aria-expanded='true'] { background: #ffffff90 !important; }
+.control-resources button > span.text-\[9px\] { display: none; }
+.control-resources button > span, .control-resources strong { font-size: 13px; font-weight: 500; white-space: nowrap; color: #696764 !important; }
+.control-resources svg { width: 18px; height: 18px; color: #696764 !important; flex-shrink: 0; stroke-width: 1.6; }
+.control-resources [data-warning='true'],
+.control-resources [data-warning='true'] button,
+.control-resources [data-warning='true'] span,
+.control-resources [data-warning='true'] strong,
+.control-resources [data-warning='true'] svg,
+.control-resources [data-warning='true'] small { color: #ff7d36 !important; }
+.control-resources [data-alarm='true'],
+.control-resources [data-alarm='true'] :is(button, span, strong, svg, small) { color: #e60012 !important; }
+.resource-alarm-banner { position: absolute; top: 64px; left: 20px; right: 20px; z-index: 20; display: flex; align-items: flex-start; gap: 8px; padding: 10px 12px; border-radius: 14px; background: #fef2f2; color: #b91c1c; font-size: 12px; line-height: 1.5; box-shadow: 0 4px 16px #b91c1c14; }
+.resource-alarm-banner > svg { width: 18px; height: 18px; flex-shrink: 0; }
+.resource-alarm-banner > div { flex: 1; min-width: 0; }
+.resource-alarm-banner p { margin: 0; }
+/* Only guidance actions change; preserve the pre-restyle alert surfaces. */
+.control-alert-action { display: flex; align-items: center; justify-content: flex-start; gap: 4px; width: fit-content; max-width: 100%; margin-top: 8px; padding: 0; border: 0; background: transparent; color: #df9c35; font-size: 12px; font-weight: 400; line-height: 1.5; text-align: left; text-decoration: none; cursor: pointer; }
+.control-alert-action:hover { text-decoration: none; color: #c18024; }
+.control-alert-action:focus-visible { outline: 2px solid #df9c35; outline-offset: 3px; border-radius: 3px; }
+.control-alert-action > svg { width: 14px; height: 14px; flex-shrink: 0; }
+.control-alert-action-offset { margin-left: 36px; max-width: calc(100% - 36px); }
+.control-resources .tds-icon { position: relative; display: inline-flex; }
+.water-tank-tip { padding: 12px 14px 12px 15px; border-radius: 24px; }
+.water-tank-tip-content { display: flex; align-items: center; gap: 10px; }
+.water-tank-tip-icon { width: 20px; height: 20px; flex-shrink: 0; color: #696764; }
+.water-tank-tip-content p { flex: 1; min-width: 0; margin: 0; color: #242424; font-size: 12px; line-height: 1.45; font-weight: 400; }
+.water-tank-tip-content button { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 28px; height: 32px; padding: 0; border: 0; background: transparent; color: #a49ca1; }
+.tds-icon small { position: absolute; top: 4px; left: 3px; font-size: 6px; font-weight: 700; }
+.control-last-feed { position: relative; display: block; width: 100%; min-height: 94px; padding: 14px 19px 12px; text-align: left; border-radius: 24px; background: white; }
+.last-feed-label { display: block; font-size: 13px; color: #b4afb0; }
+.last-feed-chevron { position: absolute; right: 19px; top: 14px; width: 20px; color: #a49da0; }
+.last-feed-values { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 18px; row-gap: 4px; padding-top: 4px; color: #281923; }
+.last-feed-amount, .last-feed-elapsed { display: inline-flex; align-items: baseline; white-space: nowrap; line-height: 1.2; }
+.last-feed-values strong { font-size: 24px; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
+.last-feed-amount > span { margin-left: 3px; font-size: 13px; font-weight: 400; }
+.last-feed-elapsed > span { white-space: pre; font-size: 13px; font-weight: 400; }
+.last-feed-today { display: block; margin-top: 6px; font-size: 12px; }
+.last-feed-chart { position: absolute; right: 24px; bottom: 16px; height: 32px; display: flex; align-items: flex-end; gap: 7px; }
+.last-feed-chart i { width: 6px; border-radius: 2px; background: #ffed99; }
+.last-feed-chart i:last-child { background: #dfa342; }
+.control-mode { background: #f1efed !important; }
+.control-mode button { font-size: 14px; border-radius: 24px; }
+.control-parameters { overflow: hidden; border-radius: 24px; background: white; }
+.control-parameters:empty { display: none; }
+.control-formula { min-height: 76px; margin: 0 15px; padding: 12px 0; border-bottom: 1px solid #f2f0f1; border-radius: 0; box-shadow: none !important; }
+.control-formula p:first-child { font-size: 14px; font-weight: 500; }
+.control-formula p + p { margin-top: 10px; font-size: 13px; }
+.control-steppers { padding: 0 15px; border-radius: 0; box-shadow: none !important; }
+.control-stepper-row { display: grid; grid-template-columns: minmax(0, 1fr) 125px; align-items: center; gap: 8px; min-height: 69px; padding: 12px 0; }
+.control-stepper-row + .control-stepper-row { border-top: 1px solid #f2f0f1; }
+.control-stepper-row > div:first-child { margin: 0; gap: 8px; }
+.control-stepper-row > div:first-child span { font-size: 13px; font-weight: 500; }
+.control-stepper-row > div:nth-child(2) { height: 38px; border-radius: 24px; padding: 0 2px; background: #f8f7f7 !important; }
+.control-stepper-row > div:nth-child(2) span { font-size: 14px; font-weight: 400; }
+.control-stepper-row > p { grid-column: 1 / -1; margin: 0; padding-left: 24px; font-size: 11px; }
+/* Formula ratio remains on the profile row; avoid repeating it below the amount. */
+.control-stepper-row:first-child > p { display: none; }
+.control-start { position: absolute; bottom: 8px; left: 0; right: 0; padding: 16px 34px 18px; background: rgba(248, 247, 245, 0.5); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+.control-start > button[hidden] { display: none; }
+.control-start > div > button { height: 54px; border-radius: 30px; background-color: #7D3C0F; border: 0; box-shadow: 0 12px 22px #643c2020; }
+.control-start > div > button:disabled { background-color: #B0B0B0; }
+.fd06-control button:focus-visible { outline: 2px solid #81491f; outline-offset: 3px; }
