@@ -9,7 +9,7 @@
     }catch(e){return true}
   })();
   if(needsPolyfill){
-    document.write('<script src="./polyfills.js"><\/script>');
+    document.write('<script src="/FD06-Formula-Maker/polyfills.js"><\/script>');
   }
 })();</script><script>(function() {
   var isModernBrowser = (function() {
@@ -24,21 +24,21 @@
     }
   })();
 
-  var cssUrls = ["./assets/index-CYcOEios.css"];
+  var cssUrls = ["/FD06-Formula-Maker/assets/index-BDyZ3r5Y.css"];
   var suffix = isModernBrowser ? '' : '.legacy';
 
   cssUrls.forEach(function(url) {
     var finalUrl = url.replace(/\.css$/, suffix + '.css');
     document.write('<link rel="stylesheet" href="' + finalUrl + '">');
   });
-})();</script><noscript><link rel="stylesheet" href="./assets/index-CYcOEios.css"></noscript><script>window.csrfToken = "";
+})();</script><noscript><link rel="stylesheet" href="/FD06-Formula-Maker/assets/index-BDyZ3r5Y.css"></noscript><script>window.csrfToken = "";
         window.userId = "";
         window.tenantId = "";
         window.appId = "";
         window.ENVIRONMENT = "production";
         const appInfo = {
           name: "FD06 智能调奶器",
-          avatar: "./favicon.svg",
+          avatar: "/FD06-Formula-Maker/favicon.svg",
           description: "FD06 智能调奶器交互演示",
         };
         if (appInfo.name) {
@@ -77,8 +77,63 @@
   window.addEventListener('unhandledrejection',function(e){
     if(e.reason!=null)_cap(e.reason instanceof Error?e.reason:new Error(String(e.reason)));
   });
-})('KSlardarWeb');</script><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="./favicon.svg"><title>FD06 智能调奶器</title><script>try {
-      window.__platform__ = JSON.parse('{"showBadge":false}');
-    } catch (e) {
-      console.error('Failed to parse __platform__', e);
-    }</script><script type="module" crossorigin src="./assets/index-BhDPeYg5.js"></script><meta property="og:title" content="FD06 智能调奶器"><meta property="og:description" content="FD06 智能调奶器交互演示"><meta property="og:image" content="./favicon.svg"><meta property="og:url" content="https://lxz9512-prog.github.io/fd06-formula-maker/#/device"><meta name="description" content="FD06 智能调奶器交互演示"></head><body><div id="root"></div></body></html>
+})('KSlardarWeb');</script><script>const slardarScript = document.createElement('script');
+    slardarScript.src = 'https://lf3-short.ibytedapm.com/slardar/fe/sdk-web/browser.cn.js?bid=apaas_miaoda&globalName=KSlardarWeb';
+    slardarScript.crossOrigin = 'anonymous';
+
+    // Add onload event handler
+    slardarScript.onload = function() {
+      // Initialize after script loads
+      if (window.KSlardarWeb) {
+        window.KSlardarWeb('context.merge', {
+          tenantId: window.tenantId ?? '',
+          appId: window.appId ?? '',
+          referrer: document.referrer || '',
+          stack_version: "2.2.6",
+        });
+        window.KSlardarWeb('init', {
+          bid: 'apaas_miaoda',
+          env: window.ENVIRONMENT || 'online',
+          userId: window.userId ?? '',
+        });
+        window.KSlardarWeb('start');
+        // Flush JS runtime errors that occurred before SDK loaded
+        var buf = window.__slardarErrBuf || [];
+        window.__slardarErrBuf = [];
+        buf.forEach(function(err) {
+          window.KSlardarWeb('captureException', err instanceof Error ? err : new Error(String(err)), { source: 'pre-sdk-error', referrer: document.referrer || '' });
+        });
+      }
+    };
+
+    // Add error handler
+    slardarScript.onerror = function() {
+      console.warn('Failed to load Slardar script');
+    };
+
+    // Add script to page
+    document.head.appendChild(slardarScript);</script><script src="https://sf3-scmcdn-cn.feishucdn.com/obj/unpkg/byted/performance/0.1.2/dist/performance.iife.js" crossorigin="anonymous" defer="defer"></script><script>(function (win, export_obj) {
+    win['LogAnalyticsObject'] = export_obj;
+    if (!win[export_obj]) {
+      function _collect() {
+        _collect.q.push(arguments);
+      }
+      _collect.q = _collect.q || [];
+      win[export_obj] = _collect;
+    }
+    win[export_obj].l = +new Date();
+  })(window, 'collectEvent');
+
+  // Create tea sdk script element
+    const teaScript = document.createElement('script');
+    teaScript.src = 'https://lf3-cdn-tos.bytescm.com/obj/static/log-sdk/collect/5.1/collect.js';
+    teaScript.crossOrigin = 'anonymous';
+    teaScript.async = true;
+
+    // Add error handler
+    teaScript.onerror = function() {
+      console.warn('Failed to load Tea script');
+    };
+
+    // Add script to page
+    document.head.appendChild(teaScript);</script><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>FD06 智能调奶器</title><script>window.__platform__ = { showBadge: false };</script><script type="module" crossorigin src="/FD06-Formula-Maker/assets/index-BUYgaYOr.js"></script><meta property="og:title" content="FD06 智能调奶器"><meta property="og:description" content="FD06 智能调奶器交互演示"><meta property="og:image" content="/FD06-Formula-Maker/favicon.svg"><meta property="og:url" content="https://lxz9512-prog.github.io/FD06-Formula-Maker/"><meta name="description" content="FD06 智能调奶器交互演示"><link rel="icon" href="/FD06-Formula-Maker/favicon.svg"></head><body><div id="root"></div></body></html>

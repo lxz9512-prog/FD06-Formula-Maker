@@ -66,6 +66,9 @@
     "path": "/powder-error"
   },
   {
+    "path": "/water-quality-error"
+  },
+  {
     "path": "/powder-clean-reminder"
   },
   {
@@ -82,6 +85,9 @@
   },
   {
     "path": "/faq"
+  },
+  {
+    "path": "/faq/mixing-chamber-cleaning"
   },
   {
     "path": "/faq/powder-output-error"
