@@ -227,7 +227,10 @@ const DeviceSettings: React.FC = () => {
             items={[
               {
                 label: t('deviceSettings.smartAssistant'),
-                onClick: () => navigate('/device-assistant'),
+                onClick: () => {
+                  sessionStorage.setItem('device_assistant_return_to', '/device-settings');
+                  navigate('/device-assistant');
+                },
               },
               {
                 label: t('deviceSettings.notificationSettings'),

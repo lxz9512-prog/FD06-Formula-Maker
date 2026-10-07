@@ -222,6 +222,7 @@ const DeviceList: React.FC = () => {
                   />
                 </div>
                 <div className="mt-1.5 flex items-center gap-2">
+                  <span className="text-[12px]" style={{ color: '#c4a882' }}>Recent</span>
                   <span className="text-[12px]" style={{ color: '#c4a882' }}>
                     {formatLastFormulaTime(
                       DEMO_LAST_FORMULA_MADE_AT,

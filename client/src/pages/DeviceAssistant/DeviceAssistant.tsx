@@ -101,7 +101,11 @@ const DeviceAssistant: React.FC = () => {
         <div className="fd06-page-nav">
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => navigate("/device-settings")}
+            onClick={() => navigate(
+              sessionStorage.getItem('device_assistant_return_to') === '/device'
+                ? '/device'
+                : '/device-settings',
+            )}
             className="fd06-page-back" aria-label={t('common.back')}
           >
             <PageBackIcon />

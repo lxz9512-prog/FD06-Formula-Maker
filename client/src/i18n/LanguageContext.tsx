@@ -153,8 +153,8 @@ const translations: Record<string, Record<Language, string>> = {
   },
   'maker.addFormulaInfo': { zh: '添加配方信息', en: 'Add formula details' },
   'maker.configureFormulaFirst': {
-    zh: '请先添加配方信息',
-    en: 'Add formula details first',
+    zh: '添加粉水配比',
+    en: 'Add Formula Ratio',
   },
   'maker.waterForFormula': { zh: '冲奶水量', en: 'Water for Formula' },
   'maker.waterAmount': { zh: '水量', en: 'Water Amount' },
@@ -167,7 +167,7 @@ const translations: Record<string, Record<Language, string>> = {
     en: 'Mix with {amount}g powder (1 scoop / {water})',
   },
   'maker.waterTemp': { zh: '水温', en: 'Water Temp' },
-  'maker.roomTemp': { zh: '常温', en: 'Room Temp' },
+  'maker.roomTemp': { zh: '常温', en: 'Ambient' },
   'maker.highTempWarning': {
     zh: '水温较高，注意防烫',
     en: 'High water temperature, please be careful of scalding',

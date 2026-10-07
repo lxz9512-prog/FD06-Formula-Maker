@@ -323,7 +323,7 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
     mixingChamberCount === 6 && dismissedChamberCount !== mixingChamberCount;
   const resourceAlarms = getResourceAlarms(deviceData.waterAmount, deviceData.powderAmount, waterQualityLevel, mixingChamberCount);
   const hasResourceAlarm = Object.values(resourceAlarms).some(Boolean);
-  const isBlocked = !isMaking && (isResourceBlocked(resourceAlarms, mode) || formulaSetupRequired);
+  const isBlocked = !isMaking && !formulaSetupRequired && isResourceBlocked(resourceAlarms, mode);
   const resourceAlarmMessages = [
     resourceAlarms.water && (language === 'zh' ? '水箱水量不足，请先加水' : 'Not enough water in the tank. Please refill first.'),
     resourceAlarms.formula && (language === 'zh' ? '设备出粉异常，请检查是否缺粉或出粉口堵塞' : 'Formula dispensing error. Check whether the powder container is empty or the powder outlet is blocked.'),
@@ -632,7 +632,10 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
             {language === 'zh' ? t('maker.title') : 'Formula Disp...'}
           </h1>
           <div className="control-nav-actions">
-            <motion.button whileTap={{ scale: 0.95 }} onClick={() => navigate('/device-assistant')} aria-label={t('deviceAssistant.title')}>
+            <motion.button whileTap={{ scale: 0.95 }} onClick={() => {
+              sessionStorage.setItem('device_assistant_return_to', '/device');
+              navigate('/device-assistant');
+            }} aria-label={t('deviceAssistant.title')}>
               <NotebookTabs className="h-5 w-5" />
             </motion.button>
           <motion.button
@@ -1297,7 +1300,7 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
             className="control-last-feed"
             aria-label={t('maker.feedingStats')}
           >
-            <span className="last-feed-label">{language === 'zh' ? '最近一次调奶' : 'Last'}</span>
+            <span className="last-feed-label">{language === 'zh' ? '最近一次调奶' : 'Recent'}</span>
             <ChevronRight className="last-feed-chevron" />
             <div className="last-feed-values">
               <span className="last-feed-amount" aria-label={formatVolumeFromMl(recentFeeding?.ml ?? 90, unit)}>
@@ -1540,7 +1543,7 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
                     key={waterTempIndex}
                     initial={false}
                     animate={{ scale: 1 }}
-                    className="flex-1 text-center text-[17px] font-semibold"
+                    className="control-temperature-value flex-1 whitespace-nowrap text-center text-[17px] font-semibold"
                     style={{
                       color:
                         isHighWaterTemperature
@@ -1681,6 +1684,10 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
               type="button"
               disabled={isBlocked}
               onClick={() => {
+                if (formulaSetupRequired) {
+                  handleFirstUseFormula();
+                  return;
+                }
                 if (waterLowDismissable && waterLowDismissed) {
                   setWaterLowDismissed(false);
                   return;
@@ -1711,6 +1718,8 @@ const BabyFormulaMaker: React.FC<BabyFormulaMakerProps> = ({
               <span className="relative z-10 flex items-center gap-2">
                 {isMaking ? (
                   <Square className="h-4 w-4 fill-current" />
+                ) : formulaSetupRequired ? (
+                  <Plus className="h-5 w-5" />
                 ) : (
                   <Play className="h-5 w-5 fill-current" />
                 )}
